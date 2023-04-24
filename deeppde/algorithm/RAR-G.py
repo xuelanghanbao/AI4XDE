@@ -4,7 +4,7 @@ from solver.PDESolver import PINNSolver
 
 class RAR_G(PINNSolver):
     def __init__(self, case='Burgers', NumDomain=1000, epoch=100):
-        super().__init__(name='RAR_G', NumDomain=NumDomain, epoch=epoch, case=case)
+        super().__init__(name='RAR_G', case=case, NumDomain=NumDomain, epoch=epoch)
 
     def closure(self):
         X = self.geomtime.random_points(100000)

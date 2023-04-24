@@ -5,7 +5,7 @@ import deepxde as dde
 from deepxde.backend import torch
 
 class PINNSolver():
-    def __init__(self, name, NumDomain=2000, epoch=1, case='Burgers'):
+    def __init__(self, name, case='Burgers', NumDomain=2000, epoch=1, ):
         self.name = name
         self.NumDomain = NumDomain
         self.epoch = epoch
