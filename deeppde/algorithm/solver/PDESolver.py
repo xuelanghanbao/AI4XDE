@@ -5,10 +5,9 @@ import deepxde as dde
 from deepxde.backend import torch
 
 class PINNSolver():
-    def __init__(self, name, case='Burgers', NumDomain=2000, epoch=1, ):
+    def __init__(self, name, case='Burgers', NumDomain=2000):
         self.name = name
         self.NumDomain = NumDomain
-        self.epoch = epoch
         self.geomtime = self.gen_geomtime()
         self.net = self.gen_net()
 
@@ -43,7 +42,7 @@ class PINNSolver():
         return -torch.sin(np.pi * x[:, 0:1]) + (1 - x[:, 0:1] ** 2) * (x[:, 1:]) * y
     
     def gen_testdata(self):
-        data = np.load("Burgers.npz")
+        data = np.load("../data/Burgers.npz")
         t, x, exact = data["t"], data["x"], data["usol"].T
         xx, tt = np.meshgrid(x, t)
         X = np.vstack((np.ravel(xx), np.ravel(tt))).T
@@ -84,8 +83,7 @@ class PINNSolver():
         t_start = time.time()
         print(f"Model {self.name} is training...")
 
-        for i in range(self.epoch):
-            self.closure()
+        self.closure()
 
         t_end = time.time()
         self.train_cost = t_end - t_start
