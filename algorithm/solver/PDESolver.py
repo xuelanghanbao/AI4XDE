@@ -3,6 +3,8 @@ import time
 import numpy as np
 import deepxde as dde
 
+dde.config.set_default_float("float64")
+
 class PINNSolver():
     def __init__(self, name, PDECase):
         self.name = name
@@ -14,6 +16,7 @@ class PINNSolver():
         self.losshistory = None
         self.train_state = None
         self.train_cost = None
+        
     
     
     def gen_net(self):
@@ -41,9 +44,9 @@ class PINNSolver():
         print("L2 relative error:", error)
         self.error.append(np.array(error))
 
-    def train_step(self, lr=1e-3, iteration=15000, callbacks=None, eval=True):
+    def train_step(self, lr=1e-3, iterations=15000, callbacks=None, eval=True):
         self.model.compile("adam", lr=lr)
-        self.model.train(iterations=iteration, callbacks=callbacks)
+        self.model.train(iterations=iterations, callbacks=callbacks)
         self.model.compile("L-BFGS")
         self.losshistory, self.train_state = self.model.train()
         if eval:
