@@ -16,12 +16,10 @@ class PINNSolver():
         self.losshistory = None
         self.train_state = None
         self.train_cost = None
-        
-    
     
     def gen_net(self):
         net = dde.maps.FNN([2] + [64] * 3 + [1], "tanh", "Glorot normal")
-        if self.PDECase.output_transform is not None:
+        if self.PDECase.use_output_transform:
             net.apply_output_transform(self.PDECase.output_transform)
         return net
     
@@ -36,6 +34,31 @@ class PINNSolver():
         self.model.save(path)
         dde.saveplot(self.losshistory, self.train_state, issave=True, isplot=False, output_dir=path)
         np.savetxt(f'{path}{self.name}_error.txt', self.error)
+
+    def plot_loss_history(self, axes=None, train=False, use_time=False):
+        import matplotlib.pyplot as plt
+        if axes is None:
+            fig, axes = plt.subplots()
+        loss_train = np.sum(self.losshistory.loss_train, axis=1)
+        loss_test = np.sum(self.losshistory.loss_test, axis=1)
+
+        if use_time:
+            x = np.array(self.losshistory.steps) / self.losshistory.steps[-1] * self.train_cost
+            axes.set_xlabel("Time(s)")
+        else:
+            x = self.losshistory.steps
+            axes.set_xlabel("Steps")
+
+        if train:
+            axes.semilogy(x, loss_train, label="Train loss")
+            axes.semilogy(x, loss_test, label="Test loss")
+        else:
+            axes.semilogy(x, loss_test, label=self.name)
+
+        axes.set_title(self.name)
+        axes.set_ylabel("Loss")
+        axes.legend()
+        return fig, axes
 
     def eval(self):
         X, y = self.PDECase.gen_testdata()
