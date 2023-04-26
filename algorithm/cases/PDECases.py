@@ -1,23 +1,27 @@
 import numpy as np
 import deepxde as dde
-from deepxde.backend import torch
+from deepxde.backend import backend_name
+from deepxde.backend import torch, paddle
 from abc import ABC, abstractmethod
 
-def check_func(f):
-    if f is None:
-        return abstractmethod
-    else:
-        return None
-    pass
-
 class PDECases(ABC):
-    def __init__(self, name, NumDomain=2000):
+    def __init__(self, name, NumDomain=2000, use_output_transform=False):
         self.name = name
         self.NumDomain = NumDomain
+        self.backend = self.gen_backend()
         self.pde = self.gen_pde()
         self.geomtime = self.gen_geomtime()
         self.data = self.gen_data()
+        self.use_output_transform = use_output_transform
 
+    def gen_backend(self):
+        if backend_name == 'pytorch':
+            return torch
+        elif backend_name == 'paddle':
+            return paddle
+        else:
+            raise Warning('Currently only support pytorch and paddle backend')
+        
     @abstractmethod
     def gen_pde(self):
         pass
@@ -37,11 +41,13 @@ class PDECases(ABC):
             return x, y
         else:
             raise Warning('You must rewrite one of func() and gen_testdata()')
-        
+    
+    def output_transform(self, x, y):
+        pass
 
 class Burgers(PDECases):
     def __init__(self, NumDomain=2000):
-        super().__init__(name='Burgers', NumDomain=NumDomain)
+        super().__init__(name='Burgers', NumDomain=NumDomain, use_output_transform=True)
     
     def gen_pde(self):
         def pde(x, y):
@@ -68,7 +74,7 @@ class Burgers(PDECases):
         return X, y
     
     def output_transform(self, x, y):
-        return -torch.sin(np.pi * x[:, 0:1]) + (1 - x[:, 0:1] ** 2) * (x[:, 1:]) * y
+        return -self.backend.sin(np.pi * x[:, 0:1]) + (1 - x[:, 0:1] ** 2) * (x[:, 1:]) * y
     
     def plot_heatmap_at_axes(self, X, y, axes, title):
         axes.set_title(title)
@@ -83,16 +89,15 @@ class Burgers(PDECases):
         
         self.plot_heatmap_at_axes(X, y, axes=axes[0][0], title="Exact solution")
         model_y = solver.model.predict(X)
-        axes[1][0].set_title(solver.name)
-        self.plot_heatmap_at_axes(X, model_y, axes[1][0])
-        self.plot_heatmap_at_axes(X, np.abs(model_y - y) , axes[1][1])
+        self.plot_heatmap_at_axes(X, model_y, axes[1][0], title=solver.name)
+        self.plot_heatmap_at_axes(X, np.abs(model_y - y) , axes[1][1], title="Absolute error")
         plt.show()
         return fig, axes
     
 
 class AllenCahn(PDECases):
     def __init__(self, NumDomain=2000):
-        super().__init__(name='AllenCahn', NumDomain=NumDomain)
+        super().__init__(name='AllenCahn', NumDomain=NumDomain, use_output_transform=True)
 
     def gen_pde(self):
         def pde(x, y):
@@ -110,9 +115,9 @@ class AllenCahn(PDECases):
     def gen_data(self):
         return dde.data.TimePDE(self.geomtime, self.pde, [], num_domain=self.NumDomain, num_test=10000, train_distribution="pseudo")
 
-    def gen_testdata():
+    def gen_testdata(self):
         from scipy.io import loadmat
-        data = loadmat("./data/usol_D_0.001_k_5.mat")
+        data = loadmat("./data/Allen_Cahn.mat")
         t = data["t"]
         x = data["x"]
         u = data["u"]
@@ -125,11 +130,11 @@ class AllenCahn(PDECases):
     def output_transform(self, x, y):
         x_in = x[:, 0:1]
         t_in = x[:, 1:2]
-        return t_in * (1 + x_in) * (1 - x_in) * y + torch.square(x_in) * torch.cos(np.pi * x_in)
+        return t_in * (1 + x_in) * (1 - x_in) * y + self.backend.square(x_in) * self.backend.cos(np.pi * x_in)
     
 class Diffusion(PDECases):
     def __init__(self, NumDomain=2000):
-        super().__init__(name='Diffusion', NumDomain=NumDomain)
+        super().__init__(name='Diffusion', NumDomain=NumDomain, use_output_transform=True)
 
     def gen_pde(self):
         def pde(x, y):
@@ -138,8 +143,8 @@ class Diffusion(PDECases):
             return (
                     dy_t
                     - dy_xx
-                    + torch.exp(-x[:, 1:])
-                    * (torch.sin(np.pi * x[:, 0:1]) - np.pi ** 2 * torch.sin(np.pi * x[:, 0:1]))
+                    + self.backend.exp(-x[:, 1:])
+                    * (self.backend.sin(np.pi * x[:, 0:1]) - np.pi ** 2 * self.backend.sin(np.pi * x[:, 0:1]))
             )
         return pde
     
@@ -156,5 +161,5 @@ class Diffusion(PDECases):
                             solution=self.func, num_test=10000)
     
     def output_transform(self, x, y):
-        return torch.sin(np.pi * x[:, 0:1]) + (1 - x[:, 0:1] ** 2) * (x[:, 1:]) * y
+        return self.backend.sin(np.pi * x[:, 0:1]) + (1 - x[:, 0:1] ** 2) * (x[:, 1:]) * y
         
