@@ -9,19 +9,12 @@ class PINNSolver():
     def __init__(self, name, PDECase):
         self.name = name
         self.PDECase = PDECase
-        self.net = self.gen_net()
         
-        self.model = dde.Model(PDECase.data, self.net)
+        self.model = dde.Model(PDECase.data, PDECase.net)
         self.error = []
         self.losshistory = None
         self.train_state = None
         self.train_cost = None
-    
-    def gen_net(self):
-        net = dde.maps.FNN([2] + [64] * 3 + [1], "tanh", "Glorot normal")
-        if self.PDECase.use_output_transform:
-            net.apply_output_transform(self.PDECase.output_transform)
-        return net
     
     def save(self, add_time=False):
         if add_time:

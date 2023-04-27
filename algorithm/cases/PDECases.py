@@ -5,14 +5,22 @@ from deepxde.backend import torch, paddle
 from abc import ABC, abstractmethod
 
 class PDECases(ABC):
-    def __init__(self, name, NumDomain=2000, use_output_transform=False):
+    def __init__(self, 
+                 name,
+                 NumDomain=2000,
+                 use_output_transform=False,
+                 layer_size = [2] + [32] * 3 + [1],
+                 activation = "tanh",
+                 initializer = "Glorot uniform"):
         self.name = name
         self.NumDomain = NumDomain
+        self.use_output_transform = use_output_transform
         self.backend = self.gen_backend()
+        self.net = self.gen_net(layer_size, activation, initializer)
         self.pde = self.gen_pde()
         self.geomtime = self.gen_geomtime()
         self.data = self.gen_data()
-        self.use_output_transform = use_output_transform
+        
 
     def gen_backend(self):
         if backend_name == 'pytorch':
@@ -21,6 +29,12 @@ class PDECases(ABC):
             return paddle
         else:
             raise Warning('Currently only support pytorch and paddle backend')
+           
+    def gen_net(self, layer_size, activation, initializer):
+        net = dde.maps.FNN(layer_size, activation, initializer)
+        if self.use_output_transform:
+            net.apply_output_transform(self.output_transform)
+        return net
         
     @abstractmethod
     def gen_pde(self):
@@ -46,8 +60,12 @@ class PDECases(ABC):
         pass
 
 class Burgers(PDECases):
-    def __init__(self, NumDomain=2000):
-        super().__init__(name='Burgers', NumDomain=NumDomain, use_output_transform=True)
+    def __init__(self, 
+                 NumDomain=2000, 
+                 layer_size=[2] + [64] * 3 + [1], 
+                 activation="tanh", 
+                 initializer="Glorot normal"):
+        super().__init__(name='Burgers', NumDomain=NumDomain, use_output_transform=True, layer_size=layer_size, activation=activation, initializer=initializer)
     
     def gen_pde(self):
         def pde(x, y):
@@ -96,8 +114,15 @@ class Burgers(PDECases):
     
 
 class AllenCahn(PDECases):
-    def __init__(self, NumDomain=2000):
-        super().__init__(name='AllenCahn', NumDomain=NumDomain, use_output_transform=True)
+    def __init__(self, 
+                 NumDomain=2000, 
+                 layer_size=[2] + [64] * 3 + [1], 
+                 activation="tanh", 
+                 initializer="Glorot normal"):
+        super().__init__(name='AllenCahn', NumDomain=NumDomain, use_output_transform=True, layer_size=layer_size, activation=activation, initializer=initializer)
+
+    def gen_net(self):
+        return dde.maps.FNN([2] + [64] * 3 + [1], "tanh", "Glorot normal")
 
     def gen_pde(self):
         def pde(x, y):
@@ -133,8 +158,15 @@ class AllenCahn(PDECases):
         return t_in * (1 + x_in) * (1 - x_in) * y + self.backend.square(x_in) * self.backend.cos(np.pi * x_in)
     
 class Diffusion(PDECases):
-    def __init__(self, NumDomain=2000):
-        super().__init__(name='Diffusion', NumDomain=NumDomain, use_output_transform=True)
+    def __init__(self, 
+                 NumDomain=2000, 
+                 layer_size=[2] + [32] * 3 + [1], 
+                 activation="tanh", 
+                 initializer="Glorot normal"):
+        super().__init__(name='Diffusion', NumDomain=NumDomain, use_output_transform=True, layer_size=layer_size, activation=activation, initializer=initializer)
+
+    def gen_net(self):
+        return dde.maps.FNN([2] + [32] * 3 + [1], "tanh", "Glorot uniform")
 
     def gen_pde(self):
         def pde(x, y):
