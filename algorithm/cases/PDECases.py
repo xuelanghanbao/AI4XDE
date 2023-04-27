@@ -120,6 +120,9 @@ class Burgers(PDECases):
     
 
 class AllenCahn(PDECases):
+    """Case of Allen-Cahn equation.
+    Implementation of Allen-Cahn equation example in paper https://arxiv.org/abs/2111.02801.
+    """
     def __init__(self, 
                  NumDomain=2000, 
                  layer_size=[2] + [64] * 3 + [1], 
@@ -196,6 +199,11 @@ class Diffusion(PDECases):
         return self.backend.sin(np.pi * x[:, 0:1]) + (1 - x[:, 0:1] ** 2) * (x[:, 1:]) * y
         
 class Wave(PDECases):
+    """Case of Wave equation.
+    Implementation of Wave equation example in paper https://arxiv.org/abs/2012.10047.
+    References:
+    https://github.com/PredictiveIntelligenceLab/MultiscalePINNs
+    """
     def __init__(self, 
                  NumDomain=2000, 
                  layer_size=[2] + [100] * 5 + [1], 
