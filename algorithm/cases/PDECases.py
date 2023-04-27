@@ -1,7 +1,7 @@
 import numpy as np
 import deepxde as dde
 from deepxde.backend import backend_name
-from deepxde.backend import torch, paddle
+from deepxde.backend import torch, paddle, tf, jax
 from abc import ABC, abstractmethod
 
 class PDECases(ABC):
@@ -10,8 +10,8 @@ class PDECases(ABC):
                  NumDomain=2000,
                  use_output_transform=False,
                  layer_size = [2] + [32] * 3 + [1],
-                 activation = "tanh",
-                 initializer = "Glorot uniform"):
+                 activation = 'tanh',
+                 initializer = 'Glorot uniform'):
         self.name = name
         self.NumDomain = NumDomain
         self.use_output_transform = use_output_transform
@@ -27,6 +27,12 @@ class PDECases(ABC):
             return torch
         elif backend_name == 'paddle':
             return paddle
+        elif backend_name in ['tensorflow', 'tensorflow.compat.v1']:
+            print('Currently tensorflow backend has not been tested, if you find any bug, please contact us.')
+            return tf.math
+        elif backend_name == 'jax':
+            print('Currently jax backend has not been tested, if you find any bug, please contact us.')
+            return jax.numpy
         else:
             raise Warning('Currently only support pytorch and paddle backend')
            
@@ -63,8 +69,8 @@ class Burgers(PDECases):
     def __init__(self, 
                  NumDomain=2000, 
                  layer_size=[2] + [64] * 3 + [1], 
-                 activation="tanh", 
-                 initializer="Glorot normal"):
+                 activation='tanh', 
+                 initializer='Glorot normal'):
         super().__init__(name='Burgers', NumDomain=NumDomain, use_output_transform=True, layer_size=layer_size, activation=activation, initializer=initializer)
     
     def gen_pde(self):
@@ -81,11 +87,11 @@ class Burgers(PDECases):
         return dde.geometry.GeometryXTime(geom, timedomain)
     
     def gen_data(self):
-        return dde.data.TimePDE(self.geomtime, self.pde, [], num_domain=self.NumDomain, num_test=10000, train_distribution="pseudo")
+        return dde.data.TimePDE(self.geomtime, self.pde, [], num_domain=self.NumDomain, num_test=10000, train_distribution='pseudo')
     
     def gen_testdata(self):
-        data = np.load("./data/Burgers.npz")
-        t, x, exact = data["t"], data["x"], data["usol"].T
+        data = np.load('./data/Burgers.npz')
+        t, x, exact = data['t'], data['x'], data['usol'].T
         xx, tt = np.meshgrid(x, t)
         X = np.vstack((np.ravel(xx), np.ravel(tt))).T
         y = exact.flatten()[:, None]
@@ -96,8 +102,8 @@ class Burgers(PDECases):
     
     def plot_heatmap_at_axes(self, X, y, axes, title):
         axes.set_title(title)
-        axes.set_xlabel("t")
-        axes.set_ylabel("x")
+        axes.set_xlabel('t')
+        axes.set_ylabel('x')
         axes.pcolormesh(X[:, 1].reshape(100, 256), X[:, 0].reshape(100, 256), y.reshape(100, 256), cmap='rainbow')
     
     def plot_heatmap(self, solver):
@@ -105,10 +111,10 @@ class Burgers(PDECases):
         X, y = self.gen_testdata()
         fig, axes = plt.subplots(2, 2, figsize=(10, 10))
         
-        self.plot_heatmap_at_axes(X, y, axes=axes[0][0], title="Exact solution")
+        self.plot_heatmap_at_axes(X, y, axes=axes[0][0], title='Exact solution')
         model_y = solver.model.predict(X)
         self.plot_heatmap_at_axes(X, model_y, axes[1][0], title=solver.name)
-        self.plot_heatmap_at_axes(X, np.abs(model_y - y) , axes[1][1], title="Absolute error")
+        self.plot_heatmap_at_axes(X, np.abs(model_y - y) , axes[1][1], title='Absolute error')
         plt.show()
         return fig, axes
     
@@ -117,12 +123,9 @@ class AllenCahn(PDECases):
     def __init__(self, 
                  NumDomain=2000, 
                  layer_size=[2] + [64] * 3 + [1], 
-                 activation="tanh", 
-                 initializer="Glorot normal"):
+                 activation='tanh', 
+                 initializer='Glorot normal'):
         super().__init__(name='AllenCahn', NumDomain=NumDomain, use_output_transform=True, layer_size=layer_size, activation=activation, initializer=initializer)
-
-    def gen_net(self):
-        return dde.maps.FNN([2] + [64] * 3 + [1], "tanh", "Glorot normal")
 
     def gen_pde(self):
         def pde(x, y):
@@ -138,14 +141,14 @@ class AllenCahn(PDECases):
         return dde.geometry.GeometryXTime(geom, timedomain)
     
     def gen_data(self):
-        return dde.data.TimePDE(self.geomtime, self.pde, [], num_domain=self.NumDomain, num_test=10000, train_distribution="pseudo")
+        return dde.data.TimePDE(self.geomtime, self.pde, [], num_domain=self.NumDomain, num_test=10000, train_distribution='pseudo')
 
     def gen_testdata(self):
         from scipy.io import loadmat
-        data = loadmat("./data/Allen_Cahn.mat")
-        t = data["t"]
-        x = data["x"]
-        u = data["u"]
+        data = loadmat('./data/Allen_Cahn.mat')
+        t = data['t']
+        x = data['x']
+        u = data['u']
         dt = dx = 0.01
         xx, tt = np.meshgrid(x, t)
         X = np.vstack((np.ravel(xx), np.ravel(tt))).T
@@ -161,12 +164,9 @@ class Diffusion(PDECases):
     def __init__(self, 
                  NumDomain=2000, 
                  layer_size=[2] + [32] * 3 + [1], 
-                 activation="tanh", 
-                 initializer="Glorot normal"):
+                 activation='tanh', 
+                 initializer='Glorot normal'):
         super().__init__(name='Diffusion', NumDomain=NumDomain, use_output_transform=True, layer_size=layer_size, activation=activation, initializer=initializer)
-
-    def gen_net(self):
-        return dde.maps.FNN([2] + [32] * 3 + [1], "tanh", "Glorot uniform")
 
     def gen_pde(self):
         def pde(x, y):
@@ -195,3 +195,35 @@ class Diffusion(PDECases):
     def output_transform(self, x, y):
         return self.backend.sin(np.pi * x[:, 0:1]) + (1 - x[:, 0:1] ** 2) * (x[:, 1:]) * y
         
+class Wave(PDECases):
+    def __init__(self, 
+                 NumDomain=2000, 
+                 layer_size=[2] + [100] * 5 + [1], 
+                 activation='tanh', 
+                 initializer='Glorot normal'):
+        super().__init__(name='Wave', NumDomain=NumDomain, use_output_transform=True, layer_size=layer_size, activation=activation, initializer=initializer)
+
+    def gen_pde(self):
+        def pde(x, y):
+            dy_tt = dde.grad.hessian(y, x, i=1, j=1)
+            dy_xx = dde.grad.hessian(y, x, i=0, j=0)
+            return dy_tt - 4.0 * dy_xx
+        return pde
+    
+    def gen_geomtime(self):
+        geom = dde.geometry.Interval(0, 1)
+        timedomain = dde.geometry.TimeDomain(0, 1)
+        return dde.geometry.GeometryXTime(geom, timedomain)
+    
+    def func(self, x):
+        return np.sin(np.pi * x[:, 0:1]) * np.cos(2 * np.pi * x[:, 1:2]) + 0.5 * np.sin(4 * np.pi * x[:, 0:1]) * np.cos(
+            8 * np.pi * x[:, 1:2])
+    
+    def gen_data(self):
+        return dde.data.TimePDE(self.geomtime, self.pde, [], num_domain=self.NumDomain, train_distribution='pseudo',
+                            solution=self.func, num_test=10000)
+    
+    def output_transform(self, x, y):
+        x_in = x[:, 0:1]
+        t_in = x[:, 1:2]
+        return 20 * y * x_in * (1 - x_in) * t_in ** 2 + self.backend.sin(np.pi * x_in) + 0.5 * self.backend.sin(4 * np.pi * x_in)
