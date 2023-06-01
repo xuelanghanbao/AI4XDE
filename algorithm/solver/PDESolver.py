@@ -32,6 +32,8 @@ class PINNSolver():
         import matplotlib.pyplot as plt
         if axes is None:
             fig, axes = plt.subplots()
+        else:
+            fig = axes.get_figure()
         loss_train = np.sum(self.losshistory.loss_train, axis=1)
         loss_test = np.sum(self.losshistory.loss_test, axis=1)
 
