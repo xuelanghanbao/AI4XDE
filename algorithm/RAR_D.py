@@ -1,14 +1,13 @@
 import numpy as np
 import deepxde as dde
-from cases.PDECases import Burgers
-from solver.PDESolver import PINNSolver
+from .cases.PDECases import Burgers
+from .solver.PDESolver import PINNSolver
 
 dde.optimizers.config.set_LBFGS_options(maxiter=1000)
 
 class RAR_D(PINNSolver):
     def __init__(self, PDECase, k=2, c=0):
         super().__init__(name=f'RAR_D_k_{k}_c_{c}', PDECase=PDECase)
-        self.name = f'RAR_D_k_{k}_c_{c}'
         self.k = k
         self.c = c
     

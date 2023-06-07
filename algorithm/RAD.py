@@ -1,7 +1,7 @@
 import numpy as np
 import deepxde as dde
-from cases.PDECases import Burgers
-from solver.PDESolver import PINNSolver
+from .cases.PDECases import Burgers
+from .solver.PDESolver import PINNSolver
 
 dde.optimizers.config.set_LBFGS_options(maxiter=1000)
 
