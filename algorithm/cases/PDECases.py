@@ -295,12 +295,12 @@ class Diffusion_Reaction_Inverse(PDECases):
     def gen_data(self):
         def gen_traindata(num):
             xvals = np.linspace(0, 1, num)
-            yvals = sol(xvals)
+            yvals = self.sol(xvals)
 
             return np.reshape(xvals, (-1, 1)), np.reshape(yvals, (-1, 1))
         
         ob_x, ob_u = gen_traindata(8)
         observe_u = dde.PointSetBC(ob_x, ob_u, component=0)
-        bc = dde.DirichletBC(self.geomtime, sol, lambda _, on_boundary: on_boundary, component=0)
+        bc = dde.DirichletBC(self.geomtime, self.sol, lambda _, on_boundary: on_boundary, component=0)
         return dde.data.PDE(self.geomtime, self.pde, bcs=[bc, observe_u], num_domain=self.NumDomain-2, num_boundary=2,
                         train_distribution="pseudo", num_test=1000)
