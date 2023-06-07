@@ -46,11 +46,11 @@ if __name__ == '__main__':
     PDECase = Burgers(NumDomain=2000)
     solver = Uniform(PDECase=PDECase, method='Grid')
 
-    #solver = Uniform(NumDomain=5000, method='Random')
-    #solver = Uniform(NumDomain=5000, method='LHS')
-    #solver = Uniform(NumDomain=5000, method='Halton')
-    #solver = Uniform(NumDomain=5000, method='Hammersley')
-    #solver = Uniform(NumDomain=5000, method='Sobol')
+    #solver = Uniform(PDECase=PDECase, method='Random')
+    #solver = Uniform(PDECase=PDECase, method='LHS')
+    #solver = Uniform(PDECase=PDECase, method='Halton')
+    #solver = Uniform(PDECase=PDECase, method='Hammersley')
+    #solver = Uniform(PDECase=PDECase, method='Sobol')
 
     solver.train()
     solver.save(add_time=True)
