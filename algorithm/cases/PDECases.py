@@ -304,3 +304,49 @@ class Diffusion_Reaction_Inverse(PDECases):
         bc = dde.DirichletBC(self.geomtime, self.sol, lambda _, on_boundary: on_boundary, component=0)
         return dde.data.PDE(self.geomtime, self.pde, bcs=[bc, observe_u], num_domain=self.NumDomain-2, num_boundary=2,
                         train_distribution="pseudo", num_test=1000)
+
+class A_Simple_ODE(PDECases):
+    def __init__(self, 
+                 NumDomain=2000, 
+                 layer_size=[1] + [64] * 3 + [2], 
+                 activation='tanh', 
+                 initializer='Glorot normal'):
+        super().__init__(name='A Simple ODE', NumDomain=NumDomain, use_output_transform=False, layer_size=layer_size, activation=activation, initializer=initializer)
+    
+    def gen_pde(self):
+        def pde(x, y):
+            y1, y2 = y[:, 0:1], y[:, 1:]
+            dy1_x = dde.grad.jacobian(y, x, i=0)
+            dy2_x = dde.grad.jacobian(y, x, i=1)
+            return [dy1_x - y2, dy2_x + y1]
+        return pde
+
+    def gen_geomtime(self):
+        geom = dde.geometry.TimeDomain(0, 10*np.pi)
+        return geom
+    
+    def gen_data(self):
+        def boundary(_, on_initial):
+            return on_initial
+        ic1 = dde.icbc.IC(self.geomtime, lambda x: 0, boundary, component=0)
+        ic2 = dde.icbc.IC(self.geomtime, lambda x: 1, boundary, component=1)
+        return dde.data.PDE(self.geomtime, self.pde, [ic1, ic2], num_domain=self.NumDomain, num_boundary=2, solution=self.func, num_test=10000, train_distribution='pseudo')
+    
+    def func(self, x):
+        return np.hstack((np.sin(x), np.cos(x)))
+    
+    def plot_result(self, model, axes=None, exact=False):
+        from matplotlib import pyplot as plt
+        xx = np.linspace(-np.pi/2, np.pi/2, 1001)[:, None]
+        if axes is None:
+            fig, axes = plt.subplots()
+        if exact:
+            axes.plot(xx, self.func(xx), label='Exact')
+        axes.plot(xx, model.predict(xx), label='Prediction')
+        axes.legend()
+        axes.set_xlabel('x')
+        axes.set_ylabel('y')
+        axes.set_title(self.name)
+        return axes
+            
+    
