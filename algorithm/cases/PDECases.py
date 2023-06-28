@@ -182,6 +182,37 @@ class AllenCahn(PDECases):
         t_in = x[:, 1:2]
         return t_in * (1 + x_in) * (1 - x_in) * y + self.backend.square(x_in) * self.backend.cos(np.pi * x_in)
     
+    def set_axes(self, axes):
+        axes.set_xlim(0, 1)
+        axes.set_ylim(-1, 1)
+        axes.set_xlabel('t')
+        axes.set_ylabel('x')
+
+    def plot_data(self, X, axes=None):
+        from matplotlib import pyplot as plt
+        if axes is None:
+            fig, axes = plt.subplots()
+        self.set_axes(axes)
+        axes.scatter(X[:, 1], X[:, 0])
+        return axes
+    
+    def plot_heatmap_at_axes(self, X, y, axes, title):
+        axes.set_title(title)
+        self.set_axes(axes)
+        axes.pcolormesh(X[:, 1].reshape(101, 201), X[:, 0].reshape(101, 201), y.reshape(101, 201), cmap='rainbow')
+    
+    def plot_heatmap(self, solver):
+        from matplotlib import pyplot as plt
+        X, y = self.gen_testdata()
+        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+        
+        self.plot_heatmap_at_axes(X, y, axes=axes[0], title='Exact solution')
+        model_y = solver.model.predict(X)
+        self.plot_heatmap_at_axes(X, model_y, axes[1], title=solver.name)
+        self.plot_heatmap_at_axes(X, np.abs(model_y - y) , axes[2], title='Absolute error')
+        plt.show()
+        return fig, axes
+    
 class Diffusion(PDECases):
     def __init__(self, 
                  NumDomain=2000, 
