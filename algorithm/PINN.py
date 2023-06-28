@@ -1,5 +1,5 @@
-from cases.PDECases import Burgers
-from solver.PDESolver import PINNSolver
+from .cases.PDECases import Burgers
+from .solver.PDESolver import PINNSolver
 
 class PINN(PINNSolver):
     def __init__(self, PDECase):
