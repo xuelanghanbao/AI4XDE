@@ -66,6 +66,11 @@ class PDECases(ABC):
     def output_transform(self, x, y):
         pass
 
+    def set_pde(self, pde):
+        self.pde = pde
+        self.data = self.gen_data()
+
+
 class Burgers(PDECases):
     def __init__(self, 
                  NumDomain=2000, 
