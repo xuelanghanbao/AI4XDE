@@ -101,6 +101,15 @@ class Burgers(PDECases):
     def output_transform(self, x, y):
         return -self.backend.sin(np.pi * x[:, 0:1]) + (1 - x[:, 0:1] ** 2) * (x[:, 1:]) * y
     
+    def plot_data(self,X):
+        from matplotlib import pyplot as plt
+        plt.xlim(0, 1)
+        plt.ylim(-1, 1)
+        plt.xlabel('t')
+        plt.ylabel('x')
+        plt.scatter(X[:, 1], X[:, 0])
+        plt.show()
+    
     def plot_heatmap_at_axes(self, X, y, axes, title):
         axes.set_title(title)
         axes.set_xlabel('t')
