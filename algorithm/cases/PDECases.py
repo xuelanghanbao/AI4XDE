@@ -345,6 +345,52 @@ class Wave(PDECases):
         t_in = x[:, 1:2]
         return 20 * y * x_in * (1 - x_in) * t_in ** 2 + self.backend.sin(np.pi * x_in) + 0.5 * self.backend.sin(4 * np.pi * x_in)
     
+    def set_axes(self, axes):
+        tl = self.geomtime.timedomain.t0
+        tr = self.geomtime.timedomain.t1
+        xl = self.geomtime.geometry.l
+        xr = self.geomtime.geometry.r
+        axes.set_xlim(tl, tr)
+        axes.set_ylim(xl, xr)
+        axes.set_xlabel('t')
+        axes.set_ylabel('x')
+
+    def plot_data(self, X, axes=None):
+        from matplotlib import pyplot as plt
+        if axes is None:
+            fig, axes = plt.subplots()
+        self.set_axes(axes)
+        axes.scatter(X[:, 1], X[:, 0])
+        return axes
+    
+    def plot_heatmap_at_axes(self, X, y, axes, title):
+        axes.set_title(title)
+        self.set_axes(axes)
+        return axes.pcolormesh(X[:, 1].reshape(1000, 1000), X[:, 0].reshape(1000, 1000), y.reshape(1000, 1000), cmap='rainbow')
+    
+    def plot_heatmap(self, solver, colorbar=None):
+        from matplotlib import pyplot as plt
+        tl = self.geomtime.timedomain.t0
+        tr = self.geomtime.timedomain.t1
+        xl = self.geomtime.geometry.l
+        xr = self.geomtime.geometry.r
+        X = np.array([[x, t] for x in np.linspace(xl, xr, 1000) for t in np.linspace(tl, tr, 1000)])
+        y = self.func(X)
+        model_y = solver.model.predict(X)
+
+        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+        axs = []
+        axs.append(self.plot_heatmap_at_axes(X, y, axes=axes[0], title='Exact solution'))
+        axs.append(self.plot_heatmap_at_axes(X, model_y, axes[1], title=solver.name))
+        axs.append(self.plot_heatmap_at_axes(X, np.abs(model_y - y) , axes[2], title='Absolute error'))
+        
+        if colorbar is not None:
+            for needColorbar, ax, axe in zip(colorbar, axs, axes):
+                if needColorbar:
+                    fig.colorbar(ax, ax=axe)
+        plt.show()
+        return fig, axes
+    
 class Diffusion_Reaction_Inverse(PDECases):
     def __init__(self,
                  NumDomain=2000, 
