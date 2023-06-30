@@ -55,7 +55,7 @@ class PDECases(ABC):
     def plot_data(self, X, axes=None):
         pass
     
-    def plot_reslult(self, solver, colorbar=None):
+    def plot_reslult(self, solver):
         pass
 
     def set_pde(self, pde):
@@ -452,12 +452,12 @@ class A_Simple_ODE(PDECases):
         super().__init__(name='A Simple ODE', NumDomain=NumDomain, use_output_transform=False, layer_size=layer_size, activation=activation, initializer=initializer)
     
     def gen_pde(self):
-        def pde(x, y):
+        def ode(x, y):
             y1, y2 = y[:, 0:1], y[:, 1:]
             dy1_x = dde.grad.jacobian(y, x, i=0)
             dy2_x = dde.grad.jacobian(y, x, i=1)
             return [dy1_x - y2, dy2_x + y1]
-        return pde
+        return ode
 
     def gen_geomtime(self):
         geom = dde.geometry.TimeDomain(0, 10*np.pi)
@@ -484,6 +484,84 @@ class A_Simple_ODE(PDECases):
         axes.legend()
         axes.set_xlabel('x')
         axes.set_ylabel('y')
+        axes.set_title(self.name)
+        return axes
+    
+class LotkaVolterra(PDECases):
+    def __init__(self, 
+                 NumDomain=3000, 
+                 layer_size=[1] + [64] * 6 + [2], 
+                 activation='tanh', 
+                 initializer='Glorot normal'):
+        super().__init__(name='Lotka-Volterra', NumDomain=NumDomain, use_output_transform=False, layer_size=layer_size, activation=activation, initializer=initializer)
+        self.ub = 200
+        self.rb = 20
+    
+    def gen_pde(self):
+        def ode_system(x, y):
+            r = y[:, 0:1]
+            p = y[:, 1:2]
+            dr_t = dde.grad.jacobian(y, x, i=0)
+            dp_t = dde.grad.jacobian(y, x, i=1)
+            return [
+                dr_t - 1 / self.ub * self.rb * (2.0 * self.ub * r - 0.04 * self.ub * r * self.ub * p),
+                dp_t - 1 / self.ub * self.rb * (0.02 * r * self.ub * p * self.ub - 1.06 * p * self.ub),
+            ]
+        return ode_system
+    
+    def gen_net(self, layer_size, activation, initializer):
+        net = dde.nn.FNN(layer_size, activation, initializer)
+        net.apply_feature_transform(self.input_transform)
+        net.apply_output_transform(self.output_transform)
+        return net
+
+    def output_transform(self, t, y):
+        y1 = y[:, 0:1]
+        y2 = y[:, 1:2]
+        return bkd.concat([y1 * bkd.tanh(t) + 100 / self.ub, y2 * bkd.tanh(t) + 15 / self.ub], axis=1)
+        
+    def input_transform(self,t):
+        return bkd.concat(
+            (
+                bkd.sin(t),
+            ),
+            axis=1,
+        )
+
+    def gen_geomtime(self):
+        geom = dde.geometry.TimeDomain(0, 1.0)
+        return geom
+    
+    def gen_data(self):
+        return dde.data.PDE(self.geomtime, self.pde, [], num_domain=self.NumDomain, num_boundary=2, num_test=3000)
+    
+    def gen_testdata(self):
+        from scipy import integrate
+        def func(t, r):
+            x, y = r
+            dx_t = 1 / self.ub * self.rb * (2.0 * self.ub * x - 0.04 * self.ub * x * self.ub * y)
+            dy_t = 1 / self.ub * self.rb * (0.02 * self.ub * x * self.ub * y - 1.06 * self.ub * y)
+            return dx_t, dy_t
+        t = np.linspace(0, 1, 100)
+
+        sol = integrate.solve_ivp(func, (0, 10), (100 / self.ub, 15 / self.ub), t_eval=t)
+        x_true, y_true = sol.y
+        x_true = x_true.reshape(100, 1)
+        y_true = y_true.reshape(100, 1)
+
+        return x_true, y_true
+    
+    def plot_result(self, solver, axes=None, exact=False):
+        from matplotlib import pyplot as plt
+        X,y = self.gen_testdata()
+        if axes is None:
+            fig, axes = plt.subplots()
+        if exact:
+            axes.plot(X, y, label='Exact')
+        axes.plot(X, solver.model.predict(X), label='Prediction')
+        axes.legend()
+        axes.set_xlabel('t')
+        axes.set_ylabel('population')
         axes.set_title(self.name)
         return axes
             
