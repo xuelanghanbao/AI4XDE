@@ -1,7 +1,6 @@
 import numpy as np
 import deepxde as dde
-from deepxde.backend import backend_name
-from deepxde.backend import torch, paddle, tf, jax
+import deepxde.backend as bkd
 from abc import ABC, abstractmethod
 
 class PDECases(ABC):
@@ -16,29 +15,13 @@ class PDECases(ABC):
         self.name = name
         self.NumDomain = NumDomain
         self.use_output_transform = use_output_transform
-        self.backend = self.gen_backend()
         self.net = self.gen_net(layer_size, activation, initializer)
         self.pde = self.gen_pde()
         self.geomtime = self.gen_geomtime()
         self.data = self.gen_data()
-        
-
-    def gen_backend(self):
-        if backend_name == 'pytorch':
-            return torch
-        elif backend_name == 'paddle':
-            return paddle
-        elif backend_name in ['tensorflow', 'tensorflow.compat.v1']:
-            print('Currently tensorflow backend has not been tested, if you find any bug, please contact us.')
-            return tf.math
-        elif backend_name == 'jax':
-            print('Currently jax backend has not been tested, if you find any bug, please contact us.')
-            return jax.numpy
-        else:
-            raise Warning('Currently only support pytorch and paddle backend')
            
     def gen_net(self, layer_size, activation, initializer):
-        net = dde.maps.FNN(layer_size, activation, initializer)
+        net = dde.nn.FNN(layer_size, activation, initializer)
         if self.use_output_transform:
             net.apply_output_transform(self.output_transform)
         return net
@@ -72,13 +55,12 @@ class PDECases(ABC):
     def plot_data(self, X, axes=None):
         pass
     
-    def plot_heatmap(self, solver, colorbar=None):
+    def plot_reslult(self, solver, colorbar=None):
         pass
 
     def set_pde(self, pde):
         self.pde = pde
         self.data = self.gen_data()
-
 
 class Burgers(PDECases):
     def __init__(self, 
@@ -113,7 +95,7 @@ class Burgers(PDECases):
         return X, y
     
     def output_transform(self, x, y):
-        return -self.backend.sin(np.pi * x[:, 0:1]) + (1 - x[:, 0:1] ** 2) * (x[:, 1:]) * y
+        return -bkd.sin(np.pi * x[:, 0:1]) + (1 - x[:, 0:1] ** 2) * (x[:, 1:]) * y
     
     def set_axes(self, axes):
         axes.set_xlim(0, 1)
@@ -195,7 +177,7 @@ class AllenCahn(PDECases):
     def output_transform(self, x, y):
         x_in = x[:, 0:1]
         t_in = x[:, 1:2]
-        return t_in * (1 + x_in) * (1 - x_in) * y + self.backend.square(x_in) * self.backend.cos(np.pi * x_in)
+        return t_in * (1 + x_in) * (1 - x_in) * y + bkd.square(x_in) * bkd.cos(np.pi * x_in)
     
     def set_axes(self, axes):
         axes.set_xlim(0, 1)
@@ -249,8 +231,8 @@ class Diffusion(PDECases):
             return (
                     dy_t
                     - dy_xx
-                    + self.backend.exp(-x[:, 1:])
-                    * (self.backend.sin(np.pi * x[:, 0:1]) - np.pi ** 2 * self.backend.sin(np.pi * x[:, 0:1]))
+                    +  bkd.exp(-x[:, 1:])
+                    * (bkd.sin(np.pi * x[:, 0:1]) - np.pi ** 2 * bkd.sin(np.pi * x[:, 0:1]))
             )
         return pde
     
@@ -267,7 +249,7 @@ class Diffusion(PDECases):
                             solution=self.func, num_test=10000)
     
     def output_transform(self, x, y):
-        return self.backend.sin(np.pi * x[:, 0:1]) + (1 - x[:, 0:1] ** 2) * (x[:, 1:]) * y
+        return bkd.sin(np.pi * x[:, 0:1]) + (1 - x[:, 0:1] ** 2) * (x[:, 1:]) * y
     
     def set_axes(self, axes):
         axes.set_xlim(0, 1)
@@ -343,7 +325,7 @@ class Wave(PDECases):
     def output_transform(self, x, y):
         x_in = x[:, 0:1]
         t_in = x[:, 1:2]
-        return 20 * y * x_in * (1 - x_in) * t_in ** 2 + self.backend.sin(np.pi * x_in) + 0.5 * self.backend.sin(4 * np.pi * x_in)
+        return 20 * y * x_in * (1 - x_in) * t_in ** 2 + bkd.sin(np.pi * x_in) + 0.5 * bkd.sin(4 * np.pi * x_in)
     
     def set_axes(self, axes):
         tl = self.geomtime.timedomain.t0
@@ -437,11 +419,11 @@ class Diffusion_Reaction_Inverse(PDECases):
             u = y[:, 0:1]
             k = y[:, 1:2]
             du_xx = dde.grad.hessian(y, x, component=0)
-            return 0.01 * du_xx - k * u - self.backend.sin(2 * np.pi * x)
+            return 0.01 * du_xx - k * u - bkd.sin(2 * np.pi * x)
         return pde
     
     def gen_net(self, layer_size, activation, initializer):
-        return dde.maps.PFNN(layer_size, activation, initializer)
+        return dde.nn.PFNN(layer_size, activation, initializer)
     
     def gen_geomtime(self):
         return dde.geometry.Interval(0, 1)
@@ -458,6 +440,8 @@ class Diffusion_Reaction_Inverse(PDECases):
         bc = dde.DirichletBC(self.geomtime, self.sol, lambda _, on_boundary: on_boundary, component=0)
         return dde.data.PDE(self.geomtime, self.pde, bcs=[bc, observe_u], num_domain=self.NumDomain-2, num_boundary=2,
                         train_distribution="pseudo", num_test=1000)
+    
+    
 
 class A_Simple_ODE(PDECases):
     def __init__(self, 
