@@ -493,7 +493,7 @@ class A_Simple_ODE(PDECases):
         axes.set_xlabel('x')
         axes.set_ylabel('y')
         axes.set_title(self.name)
-        return axes
+        return fig, axes
     
 class LotkaVolterra(PDECases):
     def __init__(self, 
@@ -571,6 +571,6 @@ class LotkaVolterra(PDECases):
         axes.set_xlabel('t')
         axes.set_ylabel('population')
         axes.set_title(self.name)
-        return axes
+        return fig, axes
             
     
