@@ -1,4 +1,3 @@
-import os
 import numpy as np
 import deepxde as dde
 import deepxde.backend as bkd
@@ -88,6 +87,7 @@ class Burgers(PDECases):
         return dde.data.TimePDE(self.geomtime, self.pde, [], num_domain=self.NumDomain, num_test=10000, train_distribution='pseudo')
     
     def gen_testdata(self):
+        import os
         basepath = os.path.abspath(__file__)
         folder = os.path.dirname(os.path.dirname(basepath))
         data_path = os.path.join(folder, 'data/Burgers.npz')
@@ -167,8 +167,12 @@ class AllenCahn(PDECases):
         return dde.data.TimePDE(self.geomtime, self.pde, [], num_domain=self.NumDomain, num_test=10000, train_distribution='pseudo')
 
     def gen_testdata(self):
+        import os
         from scipy.io import loadmat
-        data = loadmat('./data/Allen_Cahn.mat')
+        basepath = os.path.abspath(__file__)
+        folder = os.path.dirname(os.path.dirname(basepath))
+        data_path = os.path.join(folder, 'data/Allen_Cahn.mat')
+        data = loadmat(data_path)
         t = data['t']
         x = data['x']
         u = data['u']
