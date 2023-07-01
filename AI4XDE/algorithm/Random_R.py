@@ -1,6 +1,6 @@
 import deepxde as dde
-from cases.PDECases import Diffusion
-from solver.PDESolver import PINNSolver
+from ..cases.PDECases import Diffusion
+from ..solver.PDESolver import PINNSolver
 
 class Random_R(PINNSolver):
     def __init__(self, PDECase, P):

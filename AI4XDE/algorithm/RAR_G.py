@@ -1,8 +1,8 @@
 import numpy as np
 import deepxde as dde
-from deepxde.backend import torch
-from cases.PDECases import AllenCahn
-from solver.PDESolver import PINNSolver
+from ..cases.PDECases import AllenCahn
+from ..solver.PDESolver import PINNSolver
+import time
 
 dde.optimizers.config.set_LBFGS_options(maxiter=1000)
 
@@ -16,8 +16,9 @@ class RAR_G(PINNSolver):
         for i in range(100):
             X = self.PDECase.geomtime.random_points(100000)
             Y = np.abs(self.model.predict(X, operator=self.PDECase.pde))[:, 0]
-            err_eq = torch.tensor(Y)
-            X_ids = torch.topk(err_eq, self.PDECase.NumDomain//100, dim=0)[1].cpu().numpy()
+            t1 = time.time()
+            X_ids = np.argpartition(Y, self.PDECase.NumDomain//100, axis=0)
+            print(f'{time.time()-t1} s')
             self.PDECase.data.add_anchors(X[X_ids])
 
             self.train_step(iterations=1000)

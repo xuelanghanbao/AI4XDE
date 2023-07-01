@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import deepxde as dde
 import deepxde.backend as bkd
@@ -87,7 +88,10 @@ class Burgers(PDECases):
         return dde.data.TimePDE(self.geomtime, self.pde, [], num_domain=self.NumDomain, num_test=10000, train_distribution='pseudo')
     
     def gen_testdata(self):
-        data = np.load('./data/Burgers.npz')
+        basepath = os.path.abspath(__file__)
+        folder = os.path.dirname(os.path.dirname(basepath))
+        data_path = os.path.join(folder, 'data/Burgers.npz')
+        data = np.load(data_path)
         t, x, exact = data['t'], data['x'], data['usol'].T
         xx, tt = np.meshgrid(x, t)
         X = np.vstack((np.ravel(xx), np.ravel(tt))).T
@@ -116,7 +120,7 @@ class Burgers(PDECases):
         self.set_axes(axes)
         axes.pcolormesh(X[:, 1].reshape(100, 256), X[:, 0].reshape(100, 256), y.reshape(100, 256), cmap='rainbow')
     
-    def plot_heatmap(self, solver, colorbar=None):
+    def plot_result(self, solver, colorbar=None):
         from matplotlib import pyplot as plt
         X, y = self.gen_testdata()
         model_y = solver.model.predict(X)
@@ -198,7 +202,7 @@ class AllenCahn(PDECases):
         self.set_axes(axes)
         axes.pcolormesh(X[:, 1].reshape(101, 201), X[:, 0].reshape(101, 201), y.reshape(101, 201), cmap='rainbow')
     
-    def plot_heatmap(self, solver, colorbar=None):
+    def plot_result(self, solver, colorbar=None):
         from matplotlib import pyplot as plt
         X, y = self.gen_testdata()
         model_y = solver.model.predict(X)
@@ -270,7 +274,7 @@ class Diffusion(PDECases):
         self.set_axes(axes)
         return axes.pcolormesh(X[:, 1].reshape(1000, 1000), X[:, 0].reshape(1000, 1000), y.reshape(1000, 1000), cmap='rainbow')
     
-    def plot_heatmap(self, solver, colorbar=None):
+    def plot_result(self, solver, colorbar=None):
         from matplotlib import pyplot as plt
         X = np.array([[x, t] for x in np.linspace(-1, 1, 1000) for t in np.linspace(0, 1, 1000)])
         y = self.func(X)
@@ -350,7 +354,7 @@ class Wave(PDECases):
         self.set_axes(axes)
         return axes.pcolormesh(X[:, 1].reshape(1000, 1000), X[:, 0].reshape(1000, 1000), y.reshape(1000, 1000), cmap='rainbow')
     
-    def plot_heatmap(self, solver, colorbar=None):
+    def plot_result(self, solver, colorbar=None):
         from matplotlib import pyplot as plt
         tl = self.geomtime.timedomain.t0
         tr = self.geomtime.timedomain.t1
