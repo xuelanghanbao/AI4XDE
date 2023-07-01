@@ -1,3 +1,5 @@
 *.pyc
 models
 test.ipynb
+build
+AI4XDE.egg-info
