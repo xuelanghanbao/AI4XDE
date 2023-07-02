@@ -8,7 +8,7 @@ with open('README.en.md') as f:
     LONG_DESCRIPTION = f.read()
 
 setup(
-    name='AI4XDE',  # package name
+    name='ai4xde',  # package name
     version=VERSION,  # package version
     description='AI4XDE is a library for scientific machine learning and physics-informed learning',  # package description
     long_description=LONG_DESCRIPTION,

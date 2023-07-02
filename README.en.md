@@ -44,15 +44,15 @@ Subsequently, you can use the following method to install AI4XDE
 - Install using 'pip':
 
 ```
-$pip install AI4XDE
+$ pip install ai4xde
 ```
 - Install using 'conda':
 ```
-$conda install - c conda forge AI4XDE
+$ conda install -c xuelanghanbao ai4xde
 ```
 - For developers, you should clone the folder to your local machine and put it along with your project scripts:
 ```
-$git clone https://gitee.com/xuelanghanbao/AI4XDE.git
+$ git clone https://gitee.com/xuelanghanbao/AI4XDE.git
 ```
 
 #### Instructions

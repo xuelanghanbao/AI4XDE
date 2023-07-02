@@ -45,13 +45,13 @@ DeepXDE需要安装以下依赖项之一:
 - 使用 `pip`安装：
 
 ```
-$ pip install AI4XDE
+$ pip install ai4xde
 ```
 
 - 使用 `conda`安装：
 
 ```
-$ conda install -c conda-forge AI4XDE
+$ conda install -c xuelanghanbao ai4xde
 ```
 
 - 对于开发者， 可以将其克隆到本地计算机上：
