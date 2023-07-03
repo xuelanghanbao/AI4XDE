@@ -41,6 +41,7 @@ class PDECases(ABC):
     def gen_testdata(self):
         if callable(self.func):
             x = self.geomtime.uniform_points(self.NumDomain)
+            x = self.geomtime.uniform_points(self.NumDomain)
             y = self.func(x)
             return x, y
         else:
