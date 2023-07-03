@@ -1,8 +1,8 @@
 import skopt
 import numpy as np
 import deepxde as dde
-from cases.PDECases import Burgers
-from solver.PDESolver import PINNSolver
+from ..cases.PDECases import Burgers
+from ..solver.PDESolver import PINNSolver
 from distutils.version import LooseVersion
 
 class Uniform(PINNSolver):
