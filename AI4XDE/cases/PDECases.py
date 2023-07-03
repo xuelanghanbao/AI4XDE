@@ -40,11 +40,11 @@ class PDECases(ABC):
 
     def gen_testdata(self):
         if callable(self.func):
-            x = self.geomtime.random_points(self.NumDomain)
+            x = self.geomtime.uniform_points(self.NumDomain)
             y = self.func(x)
             return x, y
         else:
-            raise Warning('You must rewrite one of func() and gen_testdata()')
+            raise Warning('You must rewrite one of sol() and gen_testdata()')
     
     def output_transform(self, x, y):
         pass
@@ -249,12 +249,12 @@ class Diffusion(PDECases):
         timedomain = dde.geometry.TimeDomain(0, 1)
         return dde.geometry.GeometryXTime(geom, timedomain)
     
-    def func(self, x):
+    def sol(self, x):
         return np.sin(np.pi * x[:, 0:1]) * np.exp(-x[:, 1:])
     
     def gen_data(self):
         return dde.data.TimePDE(self.geomtime, self.pde, [], num_domain=self.NumDomain, train_distribution='pseudo',
-                            solution=self.func, num_test=10000)
+                            solution=self.sol, num_test=10000)
     
     def output_transform(self, x, y):
         return bkd.sin(np.pi * x[:, 0:1]) + (1 - x[:, 0:1] ** 2) * (x[:, 1:]) * y
@@ -281,7 +281,7 @@ class Diffusion(PDECases):
     def plot_result(self, solver, colorbar=None):
         from matplotlib import pyplot as plt
         X = np.array([[x, t] for x in np.linspace(-1, 1, 1000) for t in np.linspace(0, 1, 1000)])
-        y = self.func(X)
+        y = self.sol(X)
         model_y = solver.model.predict(X)
 
         fig, axes = plt.subplots(1, 3, figsize=(15, 5))
@@ -322,13 +322,13 @@ class Wave(PDECases):
         timedomain = dde.geometry.TimeDomain(0, 1)
         return dde.geometry.GeometryXTime(geom, timedomain)
     
-    def func(self, x):
+    def sol(self, x):
         return np.sin(np.pi * x[:, 0:1]) * np.cos(2 * np.pi * x[:, 1:2]) + 0.5 * np.sin(4 * np.pi * x[:, 0:1]) * np.cos(
             8 * np.pi * x[:, 1:2])
     
     def gen_data(self):
         return dde.data.TimePDE(self.geomtime, self.pde, [], num_domain=self.NumDomain, train_distribution='pseudo',
-                            solution=self.func, num_test=10000)
+                            solution=self.sol, num_test=10000)
     
     def output_transform(self, x, y):
         x_in = x[:, 0:1]
@@ -365,7 +365,7 @@ class Wave(PDECases):
         xl = self.geomtime.geometry.l
         xr = self.geomtime.geometry.r
         X = np.array([[x, t] for x in np.linspace(xl, xr, 1000) for t in np.linspace(tl, tr, 1000)])
-        y = self.func(X)
+        y = self.sol(X)
         model_y = solver.model.predict(X)
 
         fig, axes = plt.subplots(1, 3, figsize=(15, 5))
@@ -476,9 +476,9 @@ class A_Simple_ODE(PDECases):
             return on_initial
         ic1 = dde.icbc.IC(self.geomtime, lambda x: 0, boundary, component=0)
         ic2 = dde.icbc.IC(self.geomtime, lambda x: 1, boundary, component=1)
-        return dde.data.PDE(self.geomtime, self.pde, [ic1, ic2], num_domain=self.NumDomain, num_boundary=2, solution=self.func, num_test=10000, train_distribution='pseudo')
+        return dde.data.PDE(self.geomtime, self.pde, [ic1, ic2], num_domain=self.NumDomain, num_boundary=2, solution=self.sol, num_test=10000, train_distribution='pseudo')
     
-    def func(self, x):
+    def sol(self, x):
         return np.hstack((np.sin(x), np.cos(x)))
     
     def plot_result(self, model, axes=None, exact=False):
@@ -487,8 +487,8 @@ class A_Simple_ODE(PDECases):
         if axes is None:
             fig, axes = plt.subplots()
         if exact:
-            axes.plot(xx, self.func(xx), label='Exact')
-        axes.plot(xx, model.predict(xx), label='Prediction')
+            axes.plot(xx, self.sol(xx), label='Exact')
+        axes.plot(xx, model.predict(xx), '--', label='Prediction')
         axes.legend()
         axes.set_xlabel('x')
         axes.set_ylabel('y')
@@ -545,14 +545,14 @@ class LotkaVolterra(PDECases):
     
     def gen_testdata(self):
         from scipy import integrate
-        def func(t, r):
+        def sol(t, r):
             x, y = r
             dx_t = 1 / self.ub * self.rb * (2.0 * self.ub * x - 0.04 * self.ub * x * self.ub * y)
             dy_t = 1 / self.ub * self.rb * (0.02 * self.ub * x * self.ub * y - 1.06 * self.ub * y)
             return dx_t, dy_t
         t = np.linspace(0, 1, 100)
 
-        sol = integrate.solve_ivp(func, (0, 10), (100 / self.ub, 15 / self.ub), t_eval=t)
+        sol = integrate.solve_ivp(sol, (0, 10), (100 / self.ub, 15 / self.ub), t_eval=t)
         x_true, y_true = sol.y
         x_true = x_true.reshape(100, 1)
         y_true = y_true.reshape(100, 1)
@@ -566,11 +566,56 @@ class LotkaVolterra(PDECases):
             fig, axes = plt.subplots()
         if exact:
             axes.plot(X, y, label='Exact')
-        axes.plot(X, solver.model.predict(X), label='Prediction')
+        axes.plot(X, solver.model.predict(X), '--', label='Prediction')
         axes.legend()
         axes.set_xlabel('t')
         axes.set_ylabel('population')
         axes.set_title(self.name)
         return fig, axes
-            
     
+class SecondOrderODE(PDECases):
+    def __init__(self, 
+                 NumDomain=16, 
+                 layer_size=[1] + [50] * 3 + [1], 
+                 activation='tanh', 
+                 initializer='Glorot normal'):
+        super().__init__(name='Second Order ODE', NumDomain=NumDomain, use_output_transform=False, layer_size=layer_size, activation=activation, initializer=initializer)
+        self.ub = 200
+        self.rb = 20
+    
+    def gen_pde(self):
+        def ode_system(t, y):
+            dy_dt = dde.grad.jacobian(y, t)
+            d2y_dt2 = dde.grad.hessian(y, t)
+            return d2y_dt2 - 10 * dy_dt + 9 * y - 5 * t
+        return ode_system
+    
+    def func(self, t):
+        return 50 / 81 + t * 5 / 9 - 2 * np.exp(t) + (31 / 81) * np.exp(9 * t)
+
+    def gen_geomtime(self):
+        geom = dde.geometry.TimeDomain(0, 0.25)
+        return geom
+    
+    def gen_data(self):
+        def boundary_l(t, on_initial):
+            return on_initial and np.isclose(t[0], 0)
+        def bc_func2(inputs, outputs, X):
+            return dde.grad.jacobian(outputs, inputs, i=0, j=None) - 2
+        ic1 = dde.icbc.IC(self.geomtime, lambda x: -1, lambda _, on_initial: on_initial)
+        ic2 = dde.icbc.OperatorBC(self.geomtime, bc_func2, boundary_l)
+        return dde.data.TimePDE(self.geomtime, self.pde, [ic1, ic2], self.NumDomain, 2, solution=self.func, num_test=500)
+    
+    def plot_result(self, solver, axes=None, exact=False):
+        from matplotlib import pyplot as plt
+        X,y = self.gen_testdata()
+        if axes is None:
+            fig, axes = plt.subplots()
+        if exact:
+            axes.plot(X, y, label='Exact')
+        axes.plot(X, solver.model.predict(X), label='Prediction')
+        axes.legend()
+        axes.set_xlabel('t')
+        axes.set_ylabel('y')
+        axes.set_title(self.name)
+        return fig, axes
