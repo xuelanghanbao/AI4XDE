@@ -39,10 +39,9 @@ class PDECases(ABC):
         pass
 
     def gen_testdata(self):
-        if callable(self.func):
+        if callable(self.sol):
             x = self.geomtime.uniform_points(self.NumDomain)
-            x = self.geomtime.uniform_points(self.NumDomain)
-            y = self.func(x)
+            y = self.sol(x)
             return x, y
         else:
             raise Warning('You must rewrite one of sol() and gen_testdata()')
@@ -591,7 +590,7 @@ class SecondOrderODE(PDECases):
             return d2y_dt2 - 10 * dy_dt + 9 * y - 5 * t
         return ode_system
     
-    def func(self, t):
+    def sol(self, t):
         return 50 / 81 + t * 5 / 9 - 2 * np.exp(t) + (31 / 81) * np.exp(9 * t)
 
     def gen_geomtime(self):
@@ -605,7 +604,7 @@ class SecondOrderODE(PDECases):
             return dde.grad.jacobian(outputs, inputs, i=0, j=None) - 2
         ic1 = dde.icbc.IC(self.geomtime, lambda x: -1, lambda _, on_initial: on_initial)
         ic2 = dde.icbc.OperatorBC(self.geomtime, bc_func2, boundary_l)
-        return dde.data.TimePDE(self.geomtime, self.pde, [ic1, ic2], self.NumDomain, 2, solution=self.func, num_test=500)
+        return dde.data.TimePDE(self.geomtime, self.pde, [ic1, ic2], self.NumDomain, 2, solution=self.sol, num_test=500)
     
     def plot_result(self, solver, axes=None, exact=False):
         from matplotlib import pyplot as plt
