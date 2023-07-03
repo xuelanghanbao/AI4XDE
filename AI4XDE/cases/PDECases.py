@@ -447,9 +447,7 @@ class Diffusion_Reaction_Inverse(PDECases):
         observe_u = dde.PointSetBC(ob_x, ob_u, component=0)
         bc = dde.DirichletBC(self.geomtime, self.sol, lambda _, on_boundary: on_boundary, component=0)
         return dde.data.PDE(self.geomtime, self.pde, bcs=[bc, observe_u], num_domain=self.NumDomain-2, num_boundary=2,
-                        train_distribution="pseudo", num_test=1000)
-    
-    
+                        train_distribution="pseudo", num_test=1000)  
 
 class A_Simple_ODE(PDECases):
     def __init__(self, 
