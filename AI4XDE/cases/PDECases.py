@@ -40,7 +40,7 @@ class PDECases(ABC):
 
     def gen_testdata(self):
         if callable(self.func):
-            x = self.geomtime.random_points(self.NumDomain)
+            x = self.geomtime.uniform_points(self.NumDomain)
             y = self.func(x)
             return x, y
         else:
@@ -572,5 +572,50 @@ class LotkaVolterra(PDECases):
         axes.set_ylabel('population')
         axes.set_title(self.name)
         return fig, axes
-            
     
+class SecondOrderODE(PDECases):
+    def __init__(self, 
+                 NumDomain=16, 
+                 layer_size=[1] + [50] * 3 + [1], 
+                 activation='tanh', 
+                 initializer='Glorot normal'):
+        super().__init__(name='Second Order ODE', NumDomain=NumDomain, use_output_transform=False, layer_size=layer_size, activation=activation, initializer=initializer)
+        self.ub = 200
+        self.rb = 20
+    
+    def gen_pde(self):
+        def ode_system(t, y):
+            dy_dt = dde.grad.jacobian(y, t)
+            d2y_dt2 = dde.grad.hessian(y, t)
+            return d2y_dt2 - 10 * dy_dt + 9 * y - 5 * t
+        return ode_system
+    
+    def func(self, t):
+        return 50 / 81 + t * 5 / 9 - 2 * np.exp(t) + (31 / 81) * np.exp(9 * t)
+
+    def gen_geomtime(self):
+        geom = dde.geometry.TimeDomain(0, 0.25)
+        return geom
+    
+    def gen_data(self):
+        def boundary_l(t, on_initial):
+            return on_initial and np.isclose(t[0], 0)
+        def bc_func2(inputs, outputs, X):
+            return dde.grad.jacobian(outputs, inputs, i=0, j=None) - 2
+        ic1 = dde.icbc.IC(self.geomtime, lambda x: -1, lambda _, on_initial: on_initial)
+        ic2 = dde.icbc.OperatorBC(self.geomtime, bc_func2, boundary_l)
+        return dde.data.TimePDE(self.geomtime, self.pde, [ic1, ic2], self.NumDomain, 2, solution=self.func, num_test=500)
+    
+    def plot_result(self, solver, axes=None, exact=False):
+        from matplotlib import pyplot as plt
+        X,y = self.gen_testdata()
+        if axes is None:
+            fig, axes = plt.subplots()
+        if exact:
+            axes.plot(X, y, label='Exact')
+        axes.plot(X, solver.model.predict(X), label='Prediction')
+        axes.legend()
+        axes.set_xlabel('t')
+        axes.set_ylabel('y')
+        axes.set_title(self.name)
+        return fig, axes
