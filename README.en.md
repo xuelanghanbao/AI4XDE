@@ -24,6 +24,7 @@ Currently,  AI4XDE supports the following examples:
 7. Diffusion_ Action_ Reverse
 8. A simple ODE calculation example
 9. Lotka Volterra
+10. Second Order ODE
 
 #### Installation
 
