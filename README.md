@@ -24,6 +24,7 @@ AI4XDE是一个用于科学机器学习和物理信息网络的综合库。AI4XD
 7. Diffusion_Reaction_Inverse
 8. 一个简单的ODE算例
 9. Lotka-Volterra
+10. 一个二阶ODE算例
 
 
 #### 安装教程
