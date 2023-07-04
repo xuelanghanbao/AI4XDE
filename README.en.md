@@ -25,6 +25,15 @@ Currently,  AI4XDE supports the following examples:
 8. A simple ODE calculation example
 9. Lotka Volterra
 10. Second Order ODE
+11. Poisson equation in 1D with Dirichlet boundary conditions
+12. Poisson equation in 1D with Dirichlet/Neumann boundary conditions
+13. Poisson equation in 1D with Dirichlet/Robin boundary conditions
+14. Poisson equation in 1D with Dirichlet/Periodic boundary conditions
+15. Poisson equation in 1D with Dirichlet/PointSetOperator boundary conditions
+16. Poisson equation in 1D with hard boundary conditions
+17. Poisson equation in 1D with Multi-scale Fourier feature networks
+18. Poisson equation over L-shaped domain
+19. Laplace equation on a disk
 
 #### Installation
 
