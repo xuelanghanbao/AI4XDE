@@ -653,8 +653,8 @@ class Laplace_disk(PDECases):
         return net
     
     def set_axes(self, axes):
-        axes.set_xlim(0, 1)
-        axes.set_ylim(0, 2 * np.pi)
+        axes.set_xlim(-1, 1)
+        axes.set_ylim(-1, 1)
         axes.set_xlabel('x1')
         axes.set_ylabel('x2')
 
@@ -663,6 +663,7 @@ class Laplace_disk(PDECases):
         if axes is None:
             fig, axes = plt.subplots()
         self.set_axes(axes)
+        X = np.array([[ x[0]*np.cos(x[1]), x[0]*np.sin(x[1])] for x in X])
         axes.scatter(X[:, 0], X[:, 1])
         return axes
     
@@ -673,15 +674,19 @@ class Laplace_disk(PDECases):
     
     def plot_result(self, solver):
         from matplotlib import pyplot as plt
-        X = np.array([[x1, x2] for x1 in np.linspace(0, 1, 1000) for x2 in np.linspace(0, 2 * np.pi, 1000)])
+        X = np.array([[x1, x2] for x1 in np.linspace(0, 1, 1000) for x2 in np.linspace(0, 2*np.pi, 1000)])
+        X_R = np.array([[ x[0]*np.cos(x[1]), x[0]*np.sin(x[1])] for x in X])
         y = self.sol(X)
         model_y = solver.model.predict(X)
 
+        y[self.geomtime.inside(X)==0] = np.nan
+        model_y[self.geomtime.inside(X)==0] = np.nan
+
         fig, axes = plt.subplots(1, 3, figsize=(15, 5))
         axs = []
-        axs.append(self.plot_heatmap_at_axes(X, y, axes=axes[0], title='Exact solution'))
-        axs.append(self.plot_heatmap_at_axes(X, model_y, axes[1], title=solver.name))
-        axs.append(self.plot_heatmap_at_axes(X, np.abs(model_y - y) , axes[2], title='Absolute error'))
+        axs.append(self.plot_heatmap_at_axes(X_R, y, axes=axes[0], title='Exact solution'))
+        axs.append(self.plot_heatmap_at_axes(X_R, model_y, axes[1], title=solver.name))
+        axs.append(self.plot_heatmap_at_axes(X_R, np.abs(model_y - y) , axes[2], title='Absolute error'))
         
         plt.show()
         return fig, axes
