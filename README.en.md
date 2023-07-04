@@ -1,4 +1,4 @@
-# DeepPDE
+# AI4XDE
 
 #### Description
 AI4XDE is a comprehensive library for scientific machine learning and physical information networks. AI4XDE aims to decouple specific algorithms from specific examples, using examples as input parameters for neural networks, so that all examples can be calculated in one programming operation. Writing neural network algorithms and examples according to the interface paradigm used in the AI4XDE library can quickly test the stability of algorithms on different examples and accelerate experimental progress; At the same time, it can also enable the completion of calculation examples, which can be tested and compared on different neural network algorithms.
