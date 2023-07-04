@@ -256,13 +256,13 @@ class Poisson_2D_L_Shaped(PDECases):
         if axes is None:
             fig, axes = plt.subplots()
         self.set_axes(axes)
-        axes.scatter(X[:, 1], X[:, 0])
+        axes.scatter(X[:, 0], X[:, 1])
         return axes
     
     def plot_heatmap_at_axes(self, X, y, axes, title):
         axes.set_title(title)
         self.set_axes(axes)
-        return axes.pcolormesh(X[:, 1].reshape(1000, 1000), X[:, 0].reshape(1000, 1000), y.reshape(1000, 1000), cmap='rainbow')
+        return axes.pcolormesh(X[:, 0].reshape(1000, 1000), X[:, 1].reshape(1000, 1000), y.reshape(1000, 1000), cmap='rainbow')
     
     def plot_result(self, solver, colorbar=None):
         from matplotlib import pyplot as plt
