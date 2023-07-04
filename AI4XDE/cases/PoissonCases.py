@@ -200,7 +200,7 @@ class Poisson_1D_Fourier_Net(PoissonCase1D):
         self.Interval = [0, 1]
         self.A = 2
         self.B = 50
-        super().__init__(name='Poisson equation in 1D with hard boundary conditions', NumDomain=NumDomain, Interval=self.Interval , use_output_transform=True, layer_size=layer_size, activation=activation, initializer=initializer)
+        super().__init__(name='Poisson equation in 1D with Multi-scale Fourier feature networks', NumDomain=NumDomain, Interval=self.Interval , use_output_transform=True, layer_size=layer_size, activation=activation, initializer=initializer)
 
     def func(self,x):
         result = -(np.pi * self.A) ** 2 * bkd.sin(np.pi * self.A * x) - 0.1 * (np.pi * self.B) ** 2 * bkd.sin(np.pi * self.B * x)
@@ -222,7 +222,7 @@ class Poisson_2D_L_Shaped(PDECases):
                  layer_size=[2] + [50] * 4 + [1], 
                  activation='tanh', 
                  initializer='Glorot uniform'):
-        super().__init__(name='Poisson equation in 1D with hard boundary conditions', NumDomain=NumDomain, use_output_transform=False, layer_size=layer_size, activation=activation, initializer=initializer)
+        super().__init__(name='Poisson equation over L-shaped domain', NumDomain=NumDomain, use_output_transform=False, layer_size=layer_size, activation=activation, initializer=initializer)
 
     def gen_data(self):
         def boundary(_, on_boundary):
