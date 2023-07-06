@@ -120,7 +120,7 @@ class Burgers(PDECases):
         self.set_axes(axes)
         axes.pcolormesh(X[:, 1].reshape(100, 256), X[:, 0].reshape(100, 256), y.reshape(100, 256), cmap='rainbow')
     
-    def plot_result(self, solver, colorbar=None):
+    def plot_result(self, solver, colorbar=[0,0,0]):
         from matplotlib import pyplot as plt
         X, y = self.gen_testdata()
         model_y = solver.model.predict(X)
@@ -131,10 +131,9 @@ class Burgers(PDECases):
         axs.append(self.plot_heatmap_at_axes(X, model_y, axes[1], title=solver.name))
         axs.append(self.plot_heatmap_at_axes(X, np.abs(model_y - y) , axes[2], title='Absolute error'))
         
-        if colorbar is not None:
-            for needColorbar, ax, axe in zip(colorbar, axs, axes):
-                if needColorbar:
-                    fig.colorbar(ax, ax=axe)
+        for needColorbar, ax, axe in zip(colorbar, axs, axes):
+            if needColorbar:
+                fig.colorbar(ax, ax=axe)
         plt.show()
         return fig, axes
     
@@ -206,7 +205,7 @@ class AllenCahn(PDECases):
         self.set_axes(axes)
         axes.pcolormesh(X[:, 1].reshape(101, 201), X[:, 0].reshape(101, 201), y.reshape(101, 201), cmap='rainbow')
     
-    def plot_result(self, solver, colorbar=None):
+    def plot_result(self, solver, colorbar=[0,0,0]):
         from matplotlib import pyplot as plt
         X, y = self.gen_testdata()
         model_y = solver.model.predict(X)
@@ -217,10 +216,9 @@ class AllenCahn(PDECases):
         axs.append(self.plot_heatmap_at_axes(X, model_y, axes[1], title=solver.name))
         axs.append(self.plot_heatmap_at_axes(X, np.abs(model_y - y) , axes[2], title='Absolute error'))
         
-        if colorbar is not None:
-            for needColorbar, ax, axe in zip(colorbar, axs, axes):
-                if needColorbar:
-                    fig.colorbar(ax, ax=axe)
+        for needColorbar, ax, axe in zip(colorbar, axs, axes):
+            if needColorbar:
+                fig.colorbar(ax, ax=axe)
         plt.show()
         return fig, axes
     
@@ -278,7 +276,7 @@ class Diffusion(PDECases):
         self.set_axes(axes)
         return axes.pcolormesh(X[:, 1].reshape(1000, 1000), X[:, 0].reshape(1000, 1000), y.reshape(1000, 1000), cmap='rainbow')
     
-    def plot_result(self, solver, colorbar=None):
+    def plot_result(self, solver, colorbar=[0,0,0]):
         from matplotlib import pyplot as plt
         X = np.array([[x, t] for x in np.linspace(-1, 1, 1000) for t in np.linspace(0, 1, 1000)])
         y = self.sol(X)
@@ -290,10 +288,9 @@ class Diffusion(PDECases):
         axs.append(self.plot_heatmap_at_axes(X, model_y, axes[1], title=solver.name))
         axs.append(self.plot_heatmap_at_axes(X, np.abs(model_y - y) , axes[2], title='Absolute error'))
         
-        if colorbar is not None:
-            for needColorbar, ax, axe in zip(colorbar, axs, axes):
-                if needColorbar:
-                    fig.colorbar(ax, ax=axe)
+        for needColorbar, ax, axe in zip(colorbar, axs, axes):
+            if needColorbar:
+                fig.colorbar(ax, ax=axe)
         plt.show()
         return fig, axes
         
@@ -358,7 +355,7 @@ class Wave(PDECases):
         self.set_axes(axes)
         return axes.pcolormesh(X[:, 1].reshape(1000, 1000), X[:, 0].reshape(1000, 1000), y.reshape(1000, 1000), cmap='rainbow')
     
-    def plot_result(self, solver, colorbar=None):
+    def plot_result(self, solver, colorbar=[0,0,0]):
         from matplotlib import pyplot as plt
         tl = self.geomtime.timedomain.t0
         tr = self.geomtime.timedomain.t1
@@ -374,10 +371,9 @@ class Wave(PDECases):
         axs.append(self.plot_heatmap_at_axes(X, model_y, axes[1], title=solver.name))
         axs.append(self.plot_heatmap_at_axes(X, np.abs(model_y - y) , axes[2], title='Absolute error'))
         
-        if colorbar is not None:
-            for needColorbar, ax, axe in zip(colorbar, axs, axes):
-                if needColorbar:
-                    fig.colorbar(ax, ax=axe)
+        for needColorbar, ax, axe in zip(colorbar, axs, axes):
+            if needColorbar:
+                fig.colorbar(ax, ax=axe)
         plt.show()
         return fig, axes
     
@@ -672,7 +668,7 @@ class Laplace_disk(PDECases):
         self.set_axes(axes)
         return axes.pcolormesh(X[:, 0].reshape(1000, 1000), X[:, 1].reshape(1000, 1000), y.reshape(1000, 1000), cmap='rainbow')
     
-    def plot_result(self, solver):
+    def plot_result(self, solver, colorbar=[0,0,0]):
         from matplotlib import pyplot as plt
         X = np.array([[x1, x2] for x1 in np.linspace(0, 1, 1000) for x2 in np.linspace(0, 2*np.pi, 1000)])
         X_R = np.array([[ x[0]*np.cos(x[1]), x[0]*np.sin(x[1])] for x in X])
@@ -687,6 +683,10 @@ class Laplace_disk(PDECases):
         axs.append(self.plot_heatmap_at_axes(X_R, y, axes=axes[0], title='Exact solution'))
         axs.append(self.plot_heatmap_at_axes(X_R, model_y, axes[1], title=solver.name))
         axs.append(self.plot_heatmap_at_axes(X_R, np.abs(model_y - y) , axes[2], title='Absolute error'))
+
+        for needColorbar, ax, axe in zip(colorbar, axs, axes):
+            if needColorbar:
+                fig.colorbar(ax, ax=axe)
         
         plt.show()
         return fig, axes
@@ -754,9 +754,9 @@ class Helmholtz(PDECases):
         self.set_axes(axes)
         axes.pcolormesh(X[:, 0].reshape(1000, 1000), X[:, 1].reshape(1000, 1000), y.reshape(1000, 1000), cmap='rainbow')
     
-    def plot_result(self, solver):
+    def plot_result(self, solver, colorbar=[0,0,0]):
         from matplotlib import pyplot as plt
-        X = np.array([[x1, x2] for x1 in np.linspace(0, 1, 1000) for x2 in np.linspace(0, 2*np.pi, 1000)])
+        X = np.array([[x1, x2] for x1 in np.linspace(0, 1, 1000) for x2 in np.linspace(0, 1, 1000)])
         y = self.sol(X)
         model_y = solver.model.predict(X)
 
@@ -766,5 +766,8 @@ class Helmholtz(PDECases):
         axs.append(self.plot_heatmap_at_axes(X, model_y, axes[1], title=solver.name))
         axs.append(self.plot_heatmap_at_axes(X, np.abs(model_y - y) , axes[2], title='Absolute error'))
         
+        for needColorbar, ax, axe in zip(colorbar, axs, axes):
+            if needColorbar:
+                fig.colorbar(ax, ax=axe)
         plt.show()
         return fig, axes
