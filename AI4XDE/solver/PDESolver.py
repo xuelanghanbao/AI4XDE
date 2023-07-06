@@ -16,11 +16,13 @@ class PINNSolver():
         self.train_state = None
         self.train_cost = None
     
-    def save(self, add_time=False):
+    def save(self, path=None, add_time=False):
+        if path is None:
+            path = f'./models/{self.name}_{self.PDECase.name}'
         if add_time:
-            path = f'./models/{self.name}_{self.PDECase.name}_{time.strftime("%Y%m%d_%H%M%S", time.localtime())}/'
+            path += f'_{time.strftime("%Y%m%d_%H%M%S", time.localtime())}/'
         else:
-            path = f'./models/{self.name}/'
+            path += '/'
         
         if not os.path.exists(path):
             os.makedirs(path)
