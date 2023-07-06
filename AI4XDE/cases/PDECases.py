@@ -118,7 +118,7 @@ class Burgers(PDECases):
     def plot_heatmap_at_axes(self, X, y, axes, title):
         axes.set_title(title)
         self.set_axes(axes)
-        axes.pcolormesh(X[:, 1].reshape(100, 256), X[:, 0].reshape(100, 256), y.reshape(100, 256), cmap='rainbow')
+        return axes.pcolormesh(X[:, 1].reshape(100, 256), X[:, 0].reshape(100, 256), y.reshape(100, 256), cmap='rainbow')
     
     def plot_result(self, solver, colorbar=[0,0,0]):
         from matplotlib import pyplot as plt
@@ -203,7 +203,7 @@ class AllenCahn(PDECases):
     def plot_heatmap_at_axes(self, X, y, axes, title):
         axes.set_title(title)
         self.set_axes(axes)
-        axes.pcolormesh(X[:, 1].reshape(101, 201), X[:, 0].reshape(101, 201), y.reshape(101, 201), cmap='rainbow')
+        return axes.pcolormesh(X[:, 1].reshape(101, 201), X[:, 0].reshape(101, 201), y.reshape(101, 201), cmap='rainbow')
     
     def plot_result(self, solver, colorbar=[0,0,0]):
         from matplotlib import pyplot as plt
@@ -752,7 +752,7 @@ class Helmholtz(PDECases):
     def plot_heatmap_at_axes(self, X, y, axes, title):
         axes.set_title(title)
         self.set_axes(axes)
-        axes.pcolormesh(X[:, 0].reshape(1000, 1000), X[:, 1].reshape(1000, 1000), y.reshape(1000, 1000), cmap='rainbow')
+        return axes.pcolormesh(X[:, 0].reshape(1000, 1000), X[:, 1].reshape(1000, 1000), y.reshape(1000, 1000), cmap='rainbow')
     
     def plot_result(self, solver, colorbar=[0,0,0]):
         from matplotlib import pyplot as plt
