@@ -1019,3 +1019,103 @@ class Helmholtz_Sound_hard_Absorbing(PDECases):
                 fig.colorbar(ax, ax=axe)
         plt.show()
         return fig, axes
+
+class Kovasznay_Flow(PDECases):
+    def __init__(self, 
+                NumDomain=2601,
+                 layer_size=[2] + [50] * 4 + [3], 
+                 activation='tanh', 
+                 initializer='Glorot normal'):
+        self.Re = 20
+        self.nu = 1 / self.Re
+        self.l = 1 / (2 * self.nu) - np.sqrt(1 / (4 * self.nu ** 2) + 4 * np.pi ** 2)
+        super().__init__(name='Kovasznay flow', NumDomain=NumDomain, use_output_transform=False, layer_size=layer_size, activation=activation, initializer=initializer)
+
+    def gen_pde(self):
+        def pde(x, u):
+            u_vel, v_vel, p = u[:, 0:1], u[:, 1:2], u[:, 2:]
+            u_vel_x = dde.grad.jacobian(u, x, i=0, j=0)
+            u_vel_y = dde.grad.jacobian(u, x, i=0, j=1)
+            u_vel_xx = dde.grad.hessian(u, x, component=0, i=0, j=0)
+            u_vel_yy = dde.grad.hessian(u, x, component=0, i=1, j=1)
+
+            v_vel_x = dde.grad.jacobian(u, x, i=1, j=0)
+            v_vel_y = dde.grad.jacobian(u, x, i=1, j=1)
+            v_vel_xx = dde.grad.hessian(u, x, component=1, i=0, j=0)
+            v_vel_yy = dde.grad.hessian(u, x, component=1, i=1, j=1)
+
+            p_x = dde.grad.jacobian(u, x, i=2, j=0)
+            p_y = dde.grad.jacobian(u, x, i=2, j=1)
+
+            momentum_x = (
+                u_vel * u_vel_x + v_vel * u_vel_y + p_x - 1 / self.Re * (u_vel_xx + u_vel_yy)
+            )
+            momentum_y = (
+                u_vel * v_vel_x + v_vel * v_vel_y + p_y - 1 / self.Re * (v_vel_xx + v_vel_yy)
+            )
+            continuity = u_vel_x + v_vel_y
+
+            return [momentum_x, momentum_y, continuity]
+        return pde
+
+    def sol(self, x):
+        u = 1 - np.exp(self.l * x[:, 0:1]) * np.cos(2 * np.pi * x[:, 1:2])
+        v = self.l / (2 * np.pi) * np.exp(self.l * x[:, 0:1]) * np.sin(2 * np.pi * x[:, 1:2])
+        p = 1 / 2 * (1 - np.exp(2 * self.l * x[:, 0:1]))
+        return np.hstack((u, v, p))
+    
+    def gen_geomtime(self):
+        return dde.geometry.Rectangle(xmin=[-0.5, -0.5], xmax=[1, 1.5])
+    
+    def gen_data(self):  
+        def u_func(x):
+            return 1 - np.exp(self.l * x[:, 0:1]) * np.cos(2 * np.pi * x[:, 1:2])
+        def v_func(x):
+            return self.l / (2 * np.pi) * np.exp(self.l * x[:, 0:1]) * np.sin(2 * np.pi * x[:, 1:2])
+        def p_func(x):
+            return 1 / 2 * (1 - np.exp(2 * self.l * x[:, 0:1]))
+        def boundary_outflow(x, on_boundary):
+            return on_boundary and np.isclose(x[0], 1)
+        boundary_condition_u = dde.icbc.DirichletBC(self.geomtime, lambda x:self.sol(x)[:,0] , lambda _, on_boundary: on_boundary, component=0)
+        boundary_condition_v = dde.icbc.DirichletBC(self.geomtime, lambda x:self.sol(x)[:,1] , lambda _, on_boundary: on_boundary, component=1)
+        boundary_condition_right_p = dde.icbc.DirichletBC(self.geomtime, lambda x:self.sol(x)[:,2], boundary_outflow, component=2)
+        return dde.data.PDE(self.geomtime, self.pde, [boundary_condition_u, boundary_condition_v, boundary_condition_right_p], num_domain=self.NumDomain, num_boundary=400, solution=self.sol,num_test=100000)
+    
+    def set_axes(self, axes):
+        axes.set_xlim(-0.5, 1)
+        axes.set_ylim(-0.5, 1.5)
+        axes.set_xlabel('x1')
+        axes.set_ylabel('x2')
+
+    def plot_data(self, X, axes=None):
+        from matplotlib import pyplot as plt
+        if axes is None:
+            fig, axes = plt.subplots()
+        self.set_axes(axes)
+        axes.scatter(X[:, 0], X[:, 1])
+        return axes
+    
+    def plot_heatmap_at_axes(self, X, y, axes, title):
+        axes.set_title(title)
+        self.set_axes(axes)
+        return axes.pcolormesh(X[:, 0].reshape(1000, 1000), X[:, 1].reshape(1000, 1000), y.reshape(1000, 1000), cmap='rainbow')
+    
+    def plot_result(self, solver, colorbar=[0,0,0]):
+        from matplotlib import pyplot as plt
+        X = np.array([[x1, x2] for x1 in np.linspace(-0.5, 1, 1000) for x2 in np.linspace(-0.5, 1.5, 1000)])
+        y = self.sol(X)[:,0]
+        y[ self.geomtime.inside(X) == 0 ] = np.nan
+        model_y = solver.model.predict(X)[:,0]
+        model_y[self.geomtime.inside(X) == 0 ] = np.nan
+
+        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+        axs = []
+        axs.append(self.plot_heatmap_at_axes(X, y, axes=axes[0], title='Exact solution'))
+        axs.append(self.plot_heatmap_at_axes(X, model_y, axes[1], title=solver.name))
+        axs.append(self.plot_heatmap_at_axes(X, np.abs(model_y - y) , axes[2], title='Absolute error'))
+        
+        for needColorbar, ax, axe in zip(colorbar, axs, axes):
+            if needColorbar:
+                fig.colorbar(ax, ax=axe)
+        plt.show()
+        return fig, axes
