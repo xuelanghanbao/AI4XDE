@@ -475,7 +475,7 @@ class A_Simple_ODE(PDECases):
     def sol(self, x):
         return np.hstack((np.sin(x), np.cos(x)))
     
-    def plot_result(self, model, axes=None, exact=False):
+    def plot_result(self, model, axes=None, exact=True):
         from matplotlib import pyplot as plt
         xx = np.linspace(-np.pi/2, np.pi/2, 1001)[:, None]
         if axes is None:
@@ -553,7 +553,7 @@ class LotkaVolterra(PDECases):
 
         return x_true, y_true
     
-    def plot_result(self, solver, axes=None, exact=False):
+    def plot_result(self, solver, axes=None, exact=True):
         from matplotlib import pyplot as plt
         X,y = self.gen_testdata()
         if axes is None:
@@ -600,7 +600,7 @@ class SecondOrderODE(PDECases):
         ic2 = dde.icbc.OperatorBC(self.geomtime, bc_func2, boundary_l)
         return dde.data.TimePDE(self.geomtime, self.pde, [ic1, ic2], self.NumDomain, 2, solution=self.sol, num_test=500)
     
-    def plot_result(self, solver, axes=None, exact=False):
+    def plot_result(self, solver, axes=None, exact=True):
         from matplotlib import pyplot as plt
         X,y = self.gen_testdata()
         if axes is None:
@@ -1118,4 +1118,60 @@ class Kovasznay_Flow(PDECases):
             if needColorbar:
                 fig.colorbar(ax, ax=axe)
         plt.show()
+        return fig, axes
+    
+class Euler_Beam(PDECases):
+    def __init__(self, 
+                NumDomain=10,
+                 layer_size=[1] + [20] * 3 + [1], 
+                 activation='tanh', 
+                 initializer='Glorot normal'):
+        self.Re = 20
+        self.nu = 1 / self.Re
+        self.l = 1 / (2 * self.nu) - np.sqrt(1 / (4 * self.nu ** 2) + 4 * np.pi ** 2)
+        super().__init__(name='Euler beam', NumDomain=NumDomain, use_output_transform=False, layer_size=layer_size, activation=activation, initializer=initializer)
+
+    def ddy(self, x, y):
+        return dde.grad.hessian(y, x)
+
+
+    def dddy(self, x, y):
+        return dde.grad.jacobian(self.ddy(x, y), x)
+
+    def gen_pde(self):
+        def pde(x, y):
+            dy_xx = self.ddy(x, y)
+            dy_xxxx = dde.grad.hessian(dy_xx, x)
+            return dy_xxxx + 1
+        return pde
+
+    def sol(self, x):
+        return -(x**4) / 24 + x**3 / 6 - x**2 / 4
+    
+    def gen_geomtime(self):
+        return dde.geometry.Interval(0, 1)
+    
+    def gen_data(self):  
+        def boundary_l(x, on_boundary):
+            return on_boundary and np.isclose(x[0], 0)
+        def boundary_r(x, on_boundary):
+            return on_boundary and np.isclose(x[0], 1)
+        bc1 = dde.icbc.DirichletBC(self.geomtime, lambda x: 0, boundary_l)
+        bc2 = dde.icbc.NeumannBC(self.geomtime, lambda x: 0, boundary_l)
+        bc3 = dde.icbc.OperatorBC(self.geomtime, lambda x, y, _: self.ddy(x, y), boundary_r)
+        bc4 = dde.icbc.OperatorBC(self.geomtime, lambda x, y, _: self.dddy(x, y), boundary_r)
+        return dde.data.PDE(self.geomtime, self.pde, [bc1, bc2, bc3, bc4], num_domain=self.NumDomain, num_boundary=2, solution=self.sol,num_test=100)
+    
+    def plot_result(self, solver, axes=None, exact=True):
+        from matplotlib import pyplot as plt
+        X,y = self.gen_testdata()
+        if axes is None:
+            fig, axes = plt.subplots()
+        if exact:
+            axes.plot(X, y, label='Exact')
+        axes.plot(X, solver.model.predict(X), '--', label='Prediction')
+        axes.legend()
+        axes.set_xlabel('t')
+        axes.set_ylabel('y')
+        axes.set_title(self.name)
         return fig, axes
