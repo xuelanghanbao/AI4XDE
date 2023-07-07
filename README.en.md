@@ -12,6 +12,7 @@ Currently, AI4XDE supports the following algorithms:
 5. RAR_ G
 6. RAD
 7. R3Sampling
+8. HPO
 
 Currently,  AI4XDE supports the following examples:
 
@@ -34,6 +35,11 @@ Currently,  AI4XDE supports the following examples:
 17. Poisson equation in 1D with Multi-scale Fourier feature networks
 18. Poisson equation over L-shaped domain
 19. Laplace equation on a disk
+20. Helmholtz equation over a 2D square domain
+21. Helmholtz equation over a 2D square domain with a hole
+22. Helmholtz sound-hard scattering problem with absorbing boundary conditions
+23. Kovasznay_Flow
+24. Euler Beam
 
 #### Installation
 

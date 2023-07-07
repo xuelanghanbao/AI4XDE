@@ -12,6 +12,7 @@ AI4XDE是一个用于科学机器学习和物理信息网络的综合库。AI4XD
 5. RAR_G
 6. RAD
 7. R3Sampling
+8. HPO
 
 目前AI4XDE支持算例如下：
 
@@ -34,6 +35,11 @@ AI4XDE是一个用于科学机器学习和物理信息网络的综合库。AI4XD
 17. 具有多尺度傅立叶特征网络的一维Poisson方程
 18. L型区域上的二维Poisson方程
 19. 圆型区域上的Laplace方程
+20. 二维矩形区域上的Helmholtz方程
+21. 带孔二维矩形区域上的Helmholtz方程
+22. 具有吸收边界条件的Helmholtz声硬散射问题
+23. Kovasznay流
+24. 欧拉梁
 
 
 #### 安装教程
