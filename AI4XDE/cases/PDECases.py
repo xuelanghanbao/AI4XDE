@@ -771,3 +771,113 @@ class Helmholtz(PDECases):
                 fig.colorbar(ax, ax=axe)
         plt.show()
         return fig, axes
+    
+class Helmholtz_Hole(PDECases):
+    def __init__(self, 
+                 precision_train=15,
+                 precision_test=30, 
+                 hard_constraint=False,
+                 layer_size=[2] + [350] * 3 + [1], 
+                 activation='sin', 
+                 initializer='Glorot normal'):
+        self.n = 1
+        self.k0 = 2*np.pi*self.n
+        self.hard_constraint = hard_constraint
+        self.NumDomain, self.NumBoundary, self.NumTest = self.get_NumDomain(precision_train, precision_test)
+
+        R = 1/4
+        length = 1
+        self.inner = dde.geometry.Disk([0, 0], R)
+        self.outer = dde.geometry.Rectangle([-length / 2, -length / 2], [length / 2, length / 2])
+
+        super().__init__(name='Helmholtz equation over a 2D square domain with a hole', NumDomain=self.NumDomain, use_output_transform=False, layer_size=layer_size, activation=activation, initializer=initializer)
+    
+    def get_NumDomain(self, precision_train, precision_test):
+        wave_len = 1 / self.n
+
+        hx_train = wave_len / precision_train
+        nx_train = int(1 / hx_train)
+
+        hx_test = wave_len / precision_test
+        nx_test = int(1 / hx_test)
+
+        num_domain = nx_train ** 2
+        num_boundary = 4 * nx_train
+        num_test = nx_test ** 2
+        return num_domain, num_boundary, num_test
+
+    def gen_pde(self):
+        def pde(x, y):
+            dy_xx = dde.grad.hessian(y, x, i=0, j=0)
+            dy_yy = dde.grad.hessian(y, x, i=1, j=1)
+
+            f = self.k0 ** 2 * bkd.sin(self.k0 * x[:, 0:1]) * bkd.sin(self.k0 * x[:, 1:2])
+            return -dy_xx - dy_yy - self.k0 ** 2 * y - f
+        return pde
+    
+    def sol(self, x):
+        return np.sin(self.k0 * x[:, 0:1]) * np.sin(self.k0 * x[:, 1:2])
+
+    def gen_geomtime(self):
+        return self.outer - self.inner
+    
+    def gen_data(self):
+        def neumann(x):
+            grad = np.array(
+                [
+                    self.k0 * np.cos(self.k0 * x[:, 0:1]) * np.sin(self.k0 * x[:, 1:2]),
+                    self.k0 * np.sin(self.k0 * x[:, 0:1]) * np.cos(self.k0 * x[:, 1:2]),
+                ]
+            )
+
+            normal = -self.inner.boundary_normal(x)
+            normal = np.array([normal]).T
+            result = np.sum(grad * normal, axis=0)
+            return result
+        def boundary_inner(x, on_boundary):
+            return on_boundary and self.inner.on_boundary(x)
+        def boundary_outer(x, on_boundary):
+            return on_boundary and self.outer.on_boundary(x)
+
+        bc_inner = dde.icbc.NeumannBC(self.geomtime, neumann, boundary_inner)
+        bc_outer = dde.icbc.DirichletBC(self.geomtime, self.sol, boundary_outer)
+        
+        return dde.data.PDE(self.geomtime, self.pde, [bc_inner, bc_outer], num_domain=self.NumDomain, num_boundary=self.NumBoundary, solution=self.sol,num_test=self.NumTest)
+    
+    def set_axes(self, axes):
+        axes.set_xlim(-1/2, 1/2)
+        axes.set_ylim(-1/2, 1/2)
+        axes.set_xlabel('x1')
+        axes.set_ylabel('x2')
+
+    def plot_data(self, X, axes=None):
+        from matplotlib import pyplot as plt
+        if axes is None:
+            fig, axes = plt.subplots()
+        self.set_axes(axes)
+        axes.scatter(X[:, 0], X[:, 1])
+        return axes
+    
+    def plot_heatmap_at_axes(self, X, y, axes, title):
+        axes.set_title(title)
+        self.set_axes(axes)
+        return axes.pcolormesh(X[:, 0].reshape(1000, 1000), X[:, 1].reshape(1000, 1000), y.reshape(1000, 1000), cmap='rainbow')
+    
+    def plot_result(self, solver, colorbar=[0,0,0]):
+        from matplotlib import pyplot as plt
+        X = np.array([[x1, x2] for x1 in np.linspace(-1/2, 1/2, 1000) for x2 in np.linspace(-1/2, 1/2, 1000)])
+        y = self.sol(X)
+        y[ self.geomtime.inside(X) == 0 ] = np.nan
+        model_y = solver.model.predict(X)
+
+        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+        axs = []
+        axs.append(self.plot_heatmap_at_axes(X, y, axes=axes[0], title='Exact solution'))
+        axs.append(self.plot_heatmap_at_axes(X, model_y, axes[1], title=solver.name))
+        axs.append(self.plot_heatmap_at_axes(X, np.abs(model_y - y) , axes[2], title='Absolute error'))
+        
+        for needColorbar, ax, axe in zip(colorbar, axs, axes):
+            if needColorbar:
+                fig.colorbar(ax, ax=axe)
+        plt.show()
+        return fig, axes
