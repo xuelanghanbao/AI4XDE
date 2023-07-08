@@ -1337,3 +1337,48 @@ class Klein_Gordon(PDECases):
                 fig.colorbar(ax, ax=axe)
         plt.show()
         return fig, axes
+
+class IDE(PDECases):
+    def __init__(self, 
+                 NumDomain=16,
+                 layer_size=[1] + [20] * 3 + [1], 
+                 activation='tanh', 
+                 initializer='Glorot uniform'):
+        self.a = 0.4
+        self.L = 1
+        self.n = 1
+        super().__init__(name='Integro-differential equation', NumDomain=NumDomain, use_output_transform=False, layer_size=layer_size, activation=activation, initializer=initializer)
+
+    def gen_pde(self):
+        def ide(x, y, int_mat):
+            """int_0^x y(t)dt"""
+            lhs1 = bkd.matmul(bkd.from_numpy(int_mat), bkd.from_numpy(y))
+            lhs2 = dde.grad.jacobian(y, x, i=0, j=0)
+            rhs = 2 * np.pi * bkd.cos(2 * np.pi * x) + bkd.sin(np.pi * x) ** 2 / np.pi
+            return lhs1 + (lhs2 - rhs)[: bkd.size(lhs1)]
+        return ide
+
+    def sol(self, x):
+       return np.sin(2 * np.pi * x)
+    
+    def gen_geomtime(self):
+        return dde.geometry.TimeDomain(0, 1)
+    
+    def gen_data(self): 
+        quad_deg = 16 
+        ic = dde.icbc.IC(self.geomtime, self.sol, lambda _, on_initial: on_initial)
+        return dde.data.IDE(self.geomtime, self.pde, ic, quad_deg, num_domain=self.NumDomain, num_boundary=2)
+    
+    def plot_result(self, solver, axes=None, exact=True):
+        from matplotlib import pyplot as plt
+        X,y = self.gen_testdata()
+        if axes is None:
+            fig, axes = plt.subplots()
+        if exact:
+            axes.plot(X, y, label='Exact')
+        axes.plot(X, solver.model.predict(X), '--', label='Prediction')
+        axes.legend()
+        axes.set_xlabel('t')
+        axes.set_ylabel('y')
+        axes.set_title(self.name)
+        return fig, axes
