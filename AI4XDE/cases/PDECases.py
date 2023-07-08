@@ -1469,3 +1469,47 @@ class IDE(PDECases):
         axes.set_ylabel('y')
         axes.set_title(self.name)
         return fig, axes
+
+class Volterra_IDE(PDECases):
+    def __init__(self, 
+                 NumDomain=10,
+                 layer_size=[1] + [20] * 3 + [1], 
+                 activation='tanh', 
+                 initializer='Glorot uniform'):
+        super().__init__(name='Volterra IDE', NumDomain=NumDomain, use_output_transform=False, layer_size=layer_size, activation=activation, initializer=initializer)
+
+    def gen_pde(self):
+        def ide(x, y, int_mat):
+            """int_0^x y(t)dt"""
+            rhs = bkd.matmul(bkd.from_numpy(int_mat), bkd.from_numpy(y))
+            lhs1 = dde.grad.jacobian(y, x, i=0, j=0)
+            
+            return (lhs1 + y)[: bkd.size(rhs)] - rhs
+        return ide
+
+    def sol(self, x):
+       return np.exp(-x) * np.cosh(x)
+    
+    def gen_geomtime(self):
+        return dde.geometry.TimeDomain(0, 5)
+    
+    def gen_data(self): 
+        quad_deg = 20
+        ic = dde.icbc.IC(self.geomtime, self.sol, lambda _, on_initial: on_initial)
+        def kernel(x, s):
+            return np.exp(s - x)
+        return dde.data.IDE(self.geomtime, self.pde, ic, quad_deg, kernel=kernel, num_domain=self.NumDomain, num_boundary=2, train_distribution="uniform")
+    
+    def plot_result(self, solver, axes=None, exact=True):
+        from matplotlib import pyplot as plt
+        X,y = self.gen_testdata()
+        if axes is None:
+            fig, axes = plt.subplots()
+        if exact:
+            axes.plot(X, y, label='Exact')
+        axes.plot(X, solver.model.predict(X), '--', label='Prediction')
+        axes.legend()
+        axes.set_xlabel('t')
+        axes.set_ylabel('y')
+        axes.set_title(self.name)
+        return fig, axes
