@@ -1528,8 +1528,7 @@ class Fractional_Poisson_1D(PDECases):
         def fpde(x, y, int_mat):
             """(D_{0+}^alpha + D_{1-}^alpha) u(x) = f(x)"""
             if isinstance(int_mat, (list, tuple)) and len(int_mat) == 3:
-                indices, values, shape = int_mat
-                int_mat = bkd.sparse_tensor([[p[0] for p in indices], [p[1] for p in indices]], values, shape)
+                int_mat = bkd.sparse_tensor(*int_mat)
                 lhs = bkd.sparse_dense_matmul(int_mat, y)
             else:
                 lhs = bkd.matmul(bkd.from_numpy(int_mat), bkd.from_numpy(y))
@@ -1566,7 +1565,7 @@ class Fractional_Poisson_1D(PDECases):
             axes.plot(X, y, label='Exact')
         axes.plot(X, solver.model.predict(X), '--', label='Prediction')
         axes.legend()
-        axes.set_xlabel('t')
+        axes.set_xlabel('x')
         axes.set_ylabel('y')
         axes.set_title(self.name)
         return fig, axes
@@ -1729,6 +1728,99 @@ class Fractional_Poisson_3D(PDECases):
         y[ self.geomtime.inside(X) == 0 ] = np.nan
         model_y = solver.model.predict(X)
         model_y[ self.geomtime.inside(X) == 0 ] = np.nan
+
+        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+        axs = []
+        axs.append(self.plot_heatmap_at_axes(X, y, axes=axes[0], title='Exact solution'))
+        axs.append(self.plot_heatmap_at_axes(X, model_y, axes[1], title=solver.name))
+        axs.append(self.plot_heatmap_at_axes(X, np.abs(model_y - y) , axes[2], title='Absolute error'))
+        
+        for needColorbar, ax, axe in zip(colorbar, axs, axes):
+            if needColorbar:
+                fig.colorbar(ax, ax=axe)
+        plt.show()
+        return fig, axes
+    
+class Fractional_Diffusion_1D(PDECases):
+    def __init__(self, 
+                 NumDomain=400,
+                 Dynamic_auxiliary_points=False,
+                 layer_size=[2] + [20] * 4 + [1], 
+                 activation='tanh', 
+                 initializer='Glorot normal'):
+        self.alpha = 1.8
+        self.Dynamics_auxiliary_points = Dynamic_auxiliary_points
+        if self.Dynamics_auxiliary_points:
+            NumDomain = 20
+        super().__init__(name='Fractional Poisson equation in 1D', NumDomain=NumDomain, use_output_transform=True, layer_size=layer_size, activation=activation, initializer=initializer)
+
+    def gen_pde(self):
+        from scipy.special import gamma
+        def fpde(x, y, int_mat):
+            """du/dt + (D_{0+}^alpha + D_{1-}^alpha) u(x) = f(x)"""
+            if isinstance(int_mat, (list, tuple)) and len(int_mat) == 3:
+                int_mat = bkd.sparse_tensor(*int_mat)
+                lhs = bkd.sparse_dense_matmul(int_mat, y)
+            else:
+                lhs = bkd.matmul(bkd.from_numpy(int_mat), bkd.from_numpy(y))
+            dy_t = dde.grad.jacobian(y, x, i=0, j=1)
+            x, t = x[:, :-1], x[:, -1:]
+            rhs = -dy_t - bkd.exp(-t) * (
+                x ** 3 * (1 - x) ** 3
+                + gamma(4) / gamma(4 - self.alpha) * (x ** (3 - self.alpha) + (1 - x) ** (3 - self.alpha))
+                - 3 * gamma(5) / gamma(5 - self.alpha) * (x ** (4 - self.alpha) + (1 - x) ** (4 -self. alpha))
+                + 3 * gamma(6) / gamma(6 - self.alpha) * (x ** (5 - self.alpha) + (1 - x) ** (5 - self.alpha))
+                - gamma(7) / gamma(7 - self.alpha) * (x ** (6 - self.alpha) + (1 - x) ** (6 - self.alpha))
+            )
+            return lhs - rhs[: bkd.size(lhs)]
+        return fpde
+
+    def sol(self, x):
+        x, t = x[:, :-1], x[:, -1:]
+        return np.exp(-t) * x ** 3 * (1 - x) ** 3
+    
+    def gen_geomtime(self):
+        geom = dde.geometry.Interval(0, 1)
+        timedomain = dde.geometry.TimeDomain(0, 1)
+        return dde.geometry.GeometryXTime(geom, timedomain)
+    
+    def gen_data(self): 
+        bc = dde.icbc.DirichletBC(self.geomtime, self.sol, lambda _, on_boundary: on_boundary)
+        ic = dde.icbc.IC(self.geomtime, self.sol, lambda _, on_initial: on_initial)
+        # Dynamic auxiliary points
+        if self.Dynamics_auxiliary_points:
+            data = dde.data.TimeFPDE(self.geomtime, self.pde, self.alpha, [bc,ic], [100], num_domain=self.NumDomain, num_boundary=1, num_initial=1, num_test=50, solution=self.sol)
+        else:
+            data = dde.data.TimeFPDE(self.geomtime, self.pde, self.alpha, [bc,ic], [52], num_domain=self.NumDomain, meshtype="static", solution=self.sol)
+        return data
+    
+    def output_transform(self, x, y): 
+        return x[:, 0:1] * (1 - x[:, 0:1]) * x[:, 1:2] * y + x[:, 0:1] ** 3 * (1 - x[:, 0:1]) ** 3
+    
+    def set_axes(self, axes):
+        axes.set_xlim(0, 1)
+        axes.set_ylim(0, 1)
+        axes.set_xlabel('t')
+        axes.set_ylabel('x')
+
+    def plot_data(self, X, axes=None):
+        from matplotlib import pyplot as plt
+        if axes is None:
+            fig, axes = plt.subplots()
+        self.set_axes(axes)
+        axes.scatter(X[:, 1], X[:, 0])
+        return axes
+    
+    def plot_heatmap_at_axes(self, X, y, axes, title):
+        axes.set_title(title)
+        self.set_axes(axes)
+        return axes.pcolormesh(X[:, 1].reshape(1000, 1000), X[:, 0].reshape(1000, 1000), y.reshape(1000, 1000), cmap='rainbow')
+    
+    def plot_result(self, solver, colorbar=[0,0,0]):
+        from matplotlib import pyplot as plt
+        X = np.array([[x1, x2] for x1 in np.linspace(0, 1, 1000) for x2 in np.linspace(0, 1, 1000)])
+        y = self.sol(X)
+        model_y = solver.model.predict(X)
 
         fig, axes = plt.subplots(1, 3, figsize=(15, 5))
         axs = []
