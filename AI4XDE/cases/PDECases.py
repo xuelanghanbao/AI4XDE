@@ -1513,3 +1513,61 @@ class Volterra_IDE(PDECases):
         axes.set_ylabel('y')
         axes.set_title(self.name)
         return fig, axes
+    
+class Fractional_Poisson_1D(PDECases):
+    def __init__(self, 
+                 NumDomain=101,
+                 layer_size=[1] + [20] * 4 + [1], 
+                 activation='tanh', 
+                 initializer='Glorot normal'):
+        self.alpha = 1.5
+        super().__init__(name='Fractional Poisson equation in 1D', NumDomain=NumDomain, use_output_transform=False, layer_size=layer_size, activation=activation, initializer=initializer)
+
+    def gen_pde(self):
+        from scipy.special import gamma
+        def fpde(x, y, int_mat):
+            """(D_{0+}^alpha + D_{1-}^alpha) u(x) = f(x)"""
+            if isinstance(int_mat, (list, tuple)) and len(int_mat) == 3:
+                int_mat = bkd.sparse_tensor(*int_mat)
+                lhs = bkd.sparse_dense_matmul(int_mat, y)
+            else:
+                lhs = bkd.matmul(bkd.from_numpy(int_mat), bkd.from_numpy(y))
+            rhs = (
+                gamma(4) / gamma(4 - self.alpha) * (x ** (3 - self.alpha) + (1 - x) ** (3 - self.alpha))
+                - 3 * gamma(5) / gamma(5 - self.alpha) * (x ** (4 - self.alpha) + (1 - x) ** (4 - self.alpha))
+                + 3 * gamma(6) / gamma(6 - self.alpha) * (x ** (5 - self.alpha) + (1 - x) ** (5 - self.alpha))
+                - gamma(7) / gamma(7 - self.alpha) * (x ** (6 - self.alpha) + (1 - x) ** (6 - self.alpha))
+            )
+            # lhs /= 2 * np.cos(alpha * np.pi / 2)
+            # rhs = gamma(alpha + 2) * x
+            return lhs - rhs[: bkd.size(lhs)]
+        return fpde
+
+    def sol(self, x):
+       return x ** 3 * (1 - x) ** 3
+    
+    def gen_geomtime(self):
+        return dde.geometry.Interval(0, 1)
+    
+    def gen_data(self): 
+        bc = dde.icbc.DirichletBC(self.geomtime, self.sol, lambda _, on_boundary: on_boundary)
+        return dde.data.FPDE(self.geomtime, self.pde, self.alpha, bc, [self.NumDomain], meshtype="static", solution=self.sol)
+    
+    def gen_net(self, layer_size, activation, initializer):
+        net = dde.nn.FNN(layer_size, activation, initializer)
+        net.apply_output_transform(lambda x, y: x * (1 - x) * y)
+        return net
+    
+    def plot_result(self, solver, axes=None, exact=True):
+        from matplotlib import pyplot as plt
+        X,y = self.gen_testdata()
+        if axes is None:
+            fig, axes = plt.subplots()
+        if exact:
+            axes.plot(X, y, label='Exact')
+        axes.plot(X, solver.model.predict(X), '--', label='Prediction')
+        axes.legend()
+        axes.set_xlabel('t')
+        axes.set_ylabel('y')
+        axes.set_title(self.name)
+        return fig, axes
