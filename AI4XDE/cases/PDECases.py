@@ -1256,46 +1256,54 @@ class Heat(PDECases):
         plt.show()
         return fig, axes
 
-class Heat(PDECases):
+class Klein_Gordon(PDECases):
     def __init__(self, 
-                 NumDomain=2540,
-                 layer_size=[2] + [20] * 3 + [1], 
+                 NumDomain=30000,
+                 layer_size=[2] + [40] * 2 + [1], 
                  activation='tanh', 
                  initializer='Glorot normal'):
         self.a = 0.4
         self.L = 1
         self.n = 1
-        super().__init__(name='Heat equation', NumDomain=NumDomain, use_output_transform=False, layer_size=layer_size, activation=activation, initializer=initializer)
+        super().__init__(name='Klein-Gordon equation', NumDomain=NumDomain, use_output_transform=False, layer_size=layer_size, activation=activation, initializer=initializer)
 
     def gen_pde(self):
         def pde(x, y):
-            dy_t = dde.grad.jacobian(y, x, i=0, j=1)
+            alpha, beta, gamma, k = -1, 0, 1, 2
+            dy_tt = dde.grad.hessian(y, x, i=1, j=1)
             dy_xx = dde.grad.hessian(y, x, i=0, j=0)
-            return dy_t - self.a * dy_xx
+            x, t = x[:, 0:1], x[:, 1:2]
+            return (
+                dy_tt
+                + alpha * dy_xx
+                + beta * y
+                + gamma * (y ** k)
+                + x * bkd.cos(t)
+                - (x ** 2) * (bkd.cos(t) ** 2)
+            )
         return pde
 
-    def sol(self, X):
-        x = X[:, 0:1]
-        t = X[:, 1:2]
-        return np.exp(-(self.n**2 * np.pi**2 * self.a * t) / (self.L**2)) * np.sin(self.n * np.pi * x / self.L)
+    def sol(self, x):
+       return x[:, 0:1] * np.cos(x[:, 1:2])
     
     def gen_geomtime(self):
-        geom = dde.geometry.Interval(0, self.L)
-        timedomain = dde.geometry.TimeDomain(0, 1)
+        geom = dde.geometry.Interval(-1, 1)
+        timedomain = dde.geometry.TimeDomain(0, 10)
         return dde.geometry.GeometryXTime(geom, timedomain)
     
     def gen_data(self):  
-        bc = dde.icbc.DirichletBC(self.geomtime, lambda x: 0, lambda _, on_boundary: on_boundary)
-        ic = dde.icbc.IC(
+        bc = dde.icbc.DirichletBC(self.geomtime, self.sol, lambda _, on_boundary: on_boundary)
+        ic_1 = dde.icbc.IC(self.geomtime, self.sol, lambda _, on_initial: on_initial)
+        ic_2 = dde.icbc.OperatorBC(
             self.geomtime,
-            lambda x: np.sin(self.n * np.pi * x[:, 0:1] / self.L),
+            lambda x, y, _: dde.grad.jacobian(y, x, i=0, j=1),
             lambda _, on_initial: on_initial,
         )
-        return dde.data.TimePDE(self.geomtime, self.pde, [bc, ic], num_domain=self.NumDomain, num_boundary=80, solution=self.sol,num_test=2540, num_initial=160)
+        return dde.data.TimePDE(self.geomtime, self.pde, [bc, ic_1, ic_2], num_domain=self.NumDomain, num_boundary=1500, num_test=6000, num_initial=1500, solution=self.sol)
     
     def set_axes(self, axes):
-        axes.set_xlim(0, 1)
-        axes.set_ylim(0, self.L)
+        axes.set_xlim(0, 10)
+        axes.set_ylim(-1, 1)
         axes.set_xlabel('t')
         axes.set_ylabel('x')
 
@@ -1314,7 +1322,7 @@ class Heat(PDECases):
     
     def plot_result(self, solver, colorbar=[0,0,0]):
         from matplotlib import pyplot as plt
-        X = np.array([[x, t] for x in np.linspace(0, self.L, 1000) for t in np.linspace(0, 1, 1000)])
+        X = np.array([[x, t] for x in np.linspace(-1, 1, 1000) for t in np.linspace(0, 10, 1000)])
         y = self.sol(X)
         model_y = solver.model.predict(X)
 
