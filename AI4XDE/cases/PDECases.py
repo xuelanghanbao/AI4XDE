@@ -1338,15 +1338,102 @@ class Klein_Gordon(PDECases):
         plt.show()
         return fig, axes
 
+class Diffusion_reaction(PDECases):
+    def __init__(self, 
+                 NumDomain=320,
+                 layer_size=[2] + [30] * 6 + [1], 
+                 activation='tanh', 
+                 initializer='Glorot uniform'):
+        super().__init__(name='Diffusion-reaction equation', NumDomain=NumDomain, use_output_transform=True, layer_size=layer_size, activation=activation, initializer=initializer)
+
+    def gen_pde(self):
+        def pde(x, y):
+            dy_t = dde.grad.jacobian(y, x, i=0, j=1)
+            dy_xx = dde.grad.hessian(y, x, i=0, j=0)
+            d = 1
+            return (
+                dy_t
+                - d * dy_xx
+                - bkd.exp(-x[:, 1:])
+                * (
+                    3 * bkd.sin(2 * x[:, 0:1]) / 2
+                    + 8 * bkd.sin(3 * x[:, 0:1]) / 3
+                    + 15 * bkd.sin(4 * x[:, 0:1]) / 4
+                    + 63 * bkd.sin(8 * x[:, 0:1]) / 8
+                )
+            )
+        return pde
+
+    def sol(self, x):
+       return np.exp(-x[:, 1:]) * (
+            np.sin(x[:, 0:1])
+            + np.sin(2 * x[:, 0:1]) / 2
+            + np.sin(3 * x[:, 0:1]) / 3
+            + np.sin(4 * x[:, 0:1]) / 4
+            + np.sin(8 * x[:, 0:1]) / 8
+        )
+    
+    def gen_geomtime(self):
+        geom = dde.geometry.Interval(-1, 1)
+        timedomain = dde.geometry.TimeDomain(0, 0.99)
+        return dde.geometry.GeometryXTime(geom, timedomain)
+    
+    def output_transform(self, x, y):
+        return (
+            x[:, 1:2] * (np.pi ** 2 - x[:, 0:1] ** 2) * y
+            + bkd.sin(x[:, 0:1])
+            + bkd.sin(2 * x[:, 0:1]) / 2
+            + bkd.sin(3 * x[:, 0:1]) / 3
+            + bkd.sin(4 * x[:, 0:1]) / 4
+            + bkd.sin(8 * x[:, 0:1]) / 8
+        )
+        
+    def gen_data(self):  
+        return dde.data.TimePDE(self.geomtime, self.pde, [], num_domain=self.NumDomain, num_test=80000, solution=self.sol)
+    
+    def set_axes(self, axes):
+        axes.set_xlim(0, 0.99)
+        axes.set_ylim(-1, 1)
+        axes.set_xlabel('t')
+        axes.set_ylabel('x')
+
+    def plot_data(self, X, axes=None):
+        from matplotlib import pyplot as plt
+        if axes is None:
+            fig, axes = plt.subplots()
+        self.set_axes(axes)
+        axes.scatter(X[:, 1], X[:, 0])
+        return axes
+    
+    def plot_heatmap_at_axes(self, X, y, axes, title):
+        axes.set_title(title)
+        self.set_axes(axes)
+        return axes.pcolormesh(X[:, 1].reshape(1000, 1000), X[:, 0].reshape(1000, 1000), y.reshape(1000, 1000), cmap='rainbow')
+    
+    def plot_result(self, solver, colorbar=[0,0,0]):
+        from matplotlib import pyplot as plt
+        X = np.array([[x, t] for x in np.linspace(-1, 1, 1000) for t in np.linspace(0, 0.99, 1000)])
+        y = self.sol(X)
+        model_y = solver.model.predict(X)
+
+        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+        axs = []
+        axs.append(self.plot_heatmap_at_axes(X, y, axes=axes[0], title='Exact solution'))
+        axs.append(self.plot_heatmap_at_axes(X, model_y, axes[1], title=solver.name))
+        axs.append(self.plot_heatmap_at_axes(X, np.abs(model_y - y) , axes[2], title='Absolute error'))
+        
+        for needColorbar, ax, axe in zip(colorbar, axs, axes):
+            if needColorbar:
+                fig.colorbar(ax, ax=axe)
+        plt.show()
+        return fig, axes
+
 class IDE(PDECases):
     def __init__(self, 
                  NumDomain=16,
                  layer_size=[1] + [20] * 3 + [1], 
                  activation='tanh', 
                  initializer='Glorot uniform'):
-        self.a = 0.4
-        self.L = 1
-        self.n = 1
         super().__init__(name='Integro-differential equation', NumDomain=NumDomain, use_output_transform=False, layer_size=layer_size, activation=activation, initializer=initializer)
 
     def gen_pde(self):
