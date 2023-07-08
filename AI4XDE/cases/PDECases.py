@@ -1521,14 +1521,15 @@ class Fractional_Poisson_1D(PDECases):
                  activation='tanh', 
                  initializer='Glorot normal'):
         self.alpha = 1.5
-        super().__init__(name='Fractional Poisson equation in 1D', NumDomain=NumDomain, use_output_transform=False, layer_size=layer_size, activation=activation, initializer=initializer)
+        super().__init__(name='Fractional Poisson equation in 1D', NumDomain=NumDomain, use_output_transform=True, layer_size=layer_size, activation=activation, initializer=initializer)
 
     def gen_pde(self):
         from scipy.special import gamma
         def fpde(x, y, int_mat):
             """(D_{0+}^alpha + D_{1-}^alpha) u(x) = f(x)"""
             if isinstance(int_mat, (list, tuple)) and len(int_mat) == 3:
-                int_mat = bkd.sparse_tensor(*int_mat)
+                indices, values, shape = int_mat
+                int_mat = bkd.sparse_tensor([[p[0] for p in indices], [p[1] for p in indices]], values, shape)
                 lhs = bkd.sparse_dense_matmul(int_mat, y)
             else:
                 lhs = bkd.matmul(bkd.from_numpy(int_mat), bkd.from_numpy(y))
@@ -1553,10 +1554,8 @@ class Fractional_Poisson_1D(PDECases):
         bc = dde.icbc.DirichletBC(self.geomtime, self.sol, lambda _, on_boundary: on_boundary)
         return dde.data.FPDE(self.geomtime, self.pde, self.alpha, bc, [self.NumDomain], meshtype="static", solution=self.sol)
     
-    def gen_net(self, layer_size, activation, initializer):
-        net = dde.nn.FNN(layer_size, activation, initializer)
-        net.apply_output_transform(lambda x, y: x * (1 - x) * y)
-        return net
+    def output_transform(self, x, y): 
+        return x * (1 - x) * y
     
     def plot_result(self, solver, axes=None, exact=True):
         from matplotlib import pyplot as plt
@@ -1570,4 +1569,88 @@ class Fractional_Poisson_1D(PDECases):
         axes.set_xlabel('t')
         axes.set_ylabel('y')
         axes.set_title(self.name)
+        return fig, axes
+    
+class Fractional_Poisson_2D(PDECases):
+    def __init__(self, 
+                 NumDomain=100,
+                 layer_size=[2] + [20] * 4 + [1], 
+                 activation='tanh', 
+                 initializer='Glorot normal'):
+        self.alpha = 1.8
+        super().__init__(name='Fractional Poisson equation in 2D', NumDomain=NumDomain, use_output_transform=True, layer_size=layer_size, activation=activation, initializer=initializer)
+
+    def gen_pde(self):
+        from scipy.special import gamma
+        def fpde(x, y, int_mat):
+            """\int_theta D_theta^alpha u(x)"""
+            if isinstance(int_mat, (list, tuple)) and len(int_mat) == 3:
+                int_mat = bkd.sparse_tensor(*int_mat)
+                lhs = bkd.sparse_dense_matmul(int_mat, y)
+            else:
+                lhs = bkd.matmul(bkd.from_numpy(int_mat), bkd.from_numpy(y))
+            lhs = lhs[:, 0]
+            lhs *= gamma((1 - self.alpha) / 2) * gamma((2 + self.alpha) / 2) / (2 * np.pi ** 1.5)
+            x = x[: bkd.size(lhs)]
+            rhs = (
+                2 ** self.alpha
+                * gamma(2 + self.alpha / 2)
+                * gamma(1 + self.alpha / 2)
+                * (1 - (1 + self.alpha / 2) * bkd.from_numpy(np.sum( bkd.to_numpy(x ** 2),axis=1)))
+            )
+            return lhs - rhs
+        return fpde
+
+    def sol(self, x):
+       return (np.abs(1 - np.linalg.norm(x, axis=1, keepdims=True) ** 2)) ** (
+            1 + self.alpha / 2
+        )
+    
+    def gen_geomtime(self):
+        return dde.geometry.Disk([0, 0], 1)
+    
+    def gen_data(self): 
+        bc = dde.icbc.DirichletBC(self.geomtime, self.sol, lambda _, on_boundary: on_boundary)
+        return dde.data.FPDE(self.geomtime, self.pde, self.alpha, bc, [8,100], num_domain=self.NumDomain, num_boundary=1, solution=self.sol)
+    
+    def output_transform(self, x, y): 
+        return (1 - bkd.from_numpy(np.sum(bkd.to_numpy(x) ** 2, axis=1, keepdims=True))) * y
+    
+    def set_axes(self, axes):
+        axes.set_xlim(-1, 1)
+        axes.set_ylim(-1, 1)
+        axes.set_xlabel('x1')
+        axes.set_ylabel('x2')
+
+    def plot_data(self, X, axes=None):
+        from matplotlib import pyplot as plt
+        if axes is None:
+            fig, axes = plt.subplots()
+        self.set_axes(axes)
+        axes.scatter(X[:, 0], X[:, 1])
+        return axes
+    
+    def plot_heatmap_at_axes(self, X, y, axes, title):
+        axes.set_title(title)
+        self.set_axes(axes)
+        return axes.pcolormesh(X[:, 0].reshape(1000, 1000), X[:, 1].reshape(1000, 1000), y.reshape(1000, 1000), cmap='rainbow')
+    
+    def plot_result(self, solver, colorbar=[0,0,0]):
+        from matplotlib import pyplot as plt
+        X = np.array([[x1, x2] for x1 in np.linspace(-1, 1, 1000) for x2 in np.linspace(-1, 1, 1000)])
+        y = self.sol(X)
+        y[ self.geomtime.inside(X) == 0 ] = np.nan
+        model_y = solver.model.predict(X)
+        model_y[ self.geomtime.inside(X) == 0 ] = np.nan
+
+        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+        axs = []
+        axs.append(self.plot_heatmap_at_axes(X, y, axes=axes[0], title='Exact solution'))
+        axs.append(self.plot_heatmap_at_axes(X, model_y, axes[1], title=solver.name))
+        axs.append(self.plot_heatmap_at_axes(X, np.abs(model_y - y) , axes[2], title='Absolute error'))
+        
+        for needColorbar, ax, axe in zip(colorbar, axs, axes):
+            if needColorbar:
+                fig.colorbar(ax, ax=axe)
+        plt.show()
         return fig, axes
