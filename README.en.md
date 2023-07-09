@@ -18,37 +18,38 @@ Currently,  AI4XDE supports the following examples:
 
 1. Formula based approximate function calculation example
 2. Data based formula approximation examples
-3. Burgers equation
-4. Heat equation
-5. Allen Cahn equation
-6. Diffusion equation
-7. Diffusion-reaction equation
-8. Klein-Gordon equation
-9. Wave equation
-10. Diffusion_ Action_ Reverse equation
-11. A simple ODE calculation example
-12. Lotka Volterra equation
-13. Second Order ODE
-14. Poisson equation in 1D with Dirichlet boundary conditions
-15. Poisson equation in 1D with Dirichlet/Neumann boundary conditions
-16. Poisson equation in 1D with Dirichlet/Robin boundary conditions
-17. Poisson equation in 1D with Dirichlet/Periodic boundary conditions
-18. Poisson equation in 1D with Dirichlet/PointSetOperator boundary conditions
-19. Poisson equation in 1D with hard boundary conditions
-20. Poisson equation in 1D with Multi-scale Fourier feature networks
-21. Poisson equation over L-shaped domain
-22. Laplace equation on a disk
-23. Helmholtz equation over a 2D square domain
-24. Helmholtz equation over a 2D square domain with a hole
-25. Helmholtz sound-hard scattering problem with absorbing boundary conditions
-26. Kovasznay_Flow
-27. Euler Beam
-28. Integro-differential equation
-29. Volterra IDE
-30. Fractional Poisson equation in 1D
-31. Fractional Poisson equation in 2D
-32. Fractional Poisson equation in 3D
-33. Fractional_Diffusion_1D
+3. A simple ODE calculation example
+4. Lotka Volterra equation
+5. Second Order ODE
+6. Poisson equation in 1D with Dirichlet boundary conditions
+7. Poisson equation in 1D with Dirichlet/Neumann boundary conditions
+8. Poisson equation in 1D with Dirichlet/Robin boundary conditions
+9. Poisson equation in 1D with Dirichlet/Periodic boundary conditions
+10. Poisson equation in 1D with Dirichlet/PointSetOperator boundary conditions
+11. Poisson equation in 1D with hard boundary conditions
+12. Poisson equation in 1D with Multi-scale Fourier feature networks
+13. Poisson equation over L-shaped domain
+14. Laplace equation on a disk
+15. Euler Beam
+16. Helmholtz equation over a 2D square domain
+17. Helmholtz equation over a 2D square domain with a hole
+18. Helmholtz sound-hard scattering problem with absorbing boundary conditions
+19. Kovasznay Flow
+20. Burgers equation
+21. Heat equation
+22. Diffusion equation
+23. Diffusion-reaction equation
+24. Allen Cahn equation
+25. Klein-Gordon equation
+26. Beltrami flow
+27. Wave equation
+28. Diffusion_ Action_ Reverse equation
+29. Integro-differential equation
+30. Volterra IDE
+31. Fractional Poisson equation in 1D
+32. Fractional Poisson equation in 2D
+33. Fractional Poisson equation in 3D
+34. Fractional_Diffusion_1D
 
 #### Installation
 
