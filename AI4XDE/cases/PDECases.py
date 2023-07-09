@@ -1833,3 +1833,191 @@ class Fractional_Diffusion_1D(PDECases):
                 fig.colorbar(ax, ax=axe)
         plt.show()
         return fig, axes
+    
+class Beltrami_flow(PDECases):
+    def __init__(self, 
+                 NumDomain=50000, 
+                 layer_size=[4] + [50] * 4 + [4], 
+                 activation='tanh', 
+                 initializer='Glorot normal'):
+        self.a = 1
+        self.d = 1
+        self.Re = 1
+        super().__init__(name='Beltrami flow', NumDomain=NumDomain, use_output_transform=False, layer_size=layer_size, activation=activation, initializer=initializer)
+
+    def gen_pde(self):
+        def pde(x, u):
+            u_vel, v_vel, w_vel, p = u[:, 0:1], u[:, 1:2], u[:, 2:3], u[:, 3:4]
+            u_vel_x = dde.grad.jacobian(u, x, i=0, j=0)
+            u_vel_y = dde.grad.jacobian(u, x, i=0, j=1)
+            u_vel_z = dde.grad.jacobian(u, x, i=0, j=2)
+            u_vel_t = dde.grad.jacobian(u, x, i=0, j=3)
+            u_vel_xx = dde.grad.hessian(u, x, component=0, i=0, j=0)
+            u_vel_yy = dde.grad.hessian(u, x, component=0, i=1, j=1)
+            u_vel_zz = dde.grad.hessian(u, x, component=0, i=2, j=2)
+
+            v_vel_x = dde.grad.jacobian(u, x, i=1, j=0)
+            v_vel_y = dde.grad.jacobian(u, x, i=1, j=1)
+            v_vel_z = dde.grad.jacobian(u, x, i=1, j=2)
+            v_vel_t = dde.grad.jacobian(u, x, i=1, j=3)
+            v_vel_xx = dde.grad.hessian(u, x, component=1, i=0, j=0)
+            v_vel_yy = dde.grad.hessian(u, x, component=1, i=1, j=1)
+            v_vel_zz = dde.grad.hessian(u, x, component=1, i=2, j=2)
+
+            w_vel_x = dde.grad.jacobian(u, x, i=2, j=0)
+            w_vel_y = dde.grad.jacobian(u, x, i=2, j=1)
+            w_vel_z = dde.grad.jacobian(u, x, i=2, j=2)
+            w_vel_t = dde.grad.jacobian(u, x, i=2, j=3)
+            w_vel_xx = dde.grad.hessian(u, x, component=2, i=0, j=0)
+            w_vel_yy = dde.grad.hessian(u, x, component=2, i=1, j=1)
+            w_vel_zz = dde.grad.hessian(u, x, component=2, i=2, j=2)
+
+            p_x = dde.grad.jacobian(u, x, i=3, j=0)
+            p_y = dde.grad.jacobian(u, x, i=3, j=1)
+            p_z = dde.grad.jacobian(u, x, i=3, j=2)
+
+            momentum_x = (
+                u_vel_t
+                + (u_vel * u_vel_x + v_vel * u_vel_y + w_vel * u_vel_z)
+                + p_x
+                - 1 / self.Re * (u_vel_xx + u_vel_yy + u_vel_zz)
+            )
+            momentum_y = (
+                v_vel_t
+                + (u_vel * v_vel_x + v_vel * v_vel_y + w_vel * v_vel_z)
+                + p_y
+                - 1 / self.Re * (v_vel_xx + v_vel_yy + v_vel_zz)
+            )
+            momentum_z = (
+                w_vel_t
+                + (u_vel * w_vel_x + v_vel * w_vel_y + w_vel * w_vel_z)
+                + p_z
+                - 1 / self.Re * (w_vel_xx + w_vel_yy + w_vel_zz)
+            )
+            continuity = u_vel_x + v_vel_y + w_vel_z
+            return [momentum_x, momentum_y, momentum_z, continuity]
+        return pde
+    
+    def gen_geomtime(self):
+        spatial_domain = dde.geometry.Cuboid(xmin=[-1, -1, -1], xmax=[1, 1, 1])
+        temporal_domain = dde.geometry.TimeDomain(0, 1) 
+        return dde.geometry.GeometryXTime(spatial_domain, temporal_domain)
+    
+    def u_func(self, x):
+        return (
+            -self.a
+            * (
+                np.exp(self.a * x[:, 0:1]) * np.sin(self.a * x[:, 1:2] + self.d * x[:, 2:3])
+                + np.exp(self.a * x[:, 2:3]) * np.cos(self.a * x[:, 0:1] + self.d * x[:, 1:2])
+            )
+            * np.exp(-(self.d ** 2) * x[:, 3:4])
+        )
+
+    def v_func(self, x):
+        return (
+            -self.a
+            * (
+                np.exp(self.a * x[:, 1:2]) * np.sin(self.a * x[:, 2:3] + self.d * x[:, 0:1])
+                + np.exp(self.a * x[:, 0:1]) * np.cos(self.a * x[:, 1:2] + self.d * x[:, 2:3])
+            )
+            * np.exp(-(self.d ** 2) * x[:, 3:4])
+        )
+
+    def w_func(self, x):
+        return (
+            -self.a
+            * (
+                np.exp(self.a * x[:, 2:3]) * np.sin(self.a * x[:, 0:1] + self.d * x[:, 1:2])
+                + np.exp(self.a * x[:, 1:2]) * np.cos(self.a * x[:, 2:3] + self.d * x[:, 0:1])
+            )
+            * np.exp(-(self.d ** 2) * x[:, 3:4])
+        )
+
+    def p_func(self, x):
+        return (
+            -0.5
+            * self.a ** 2
+            * (
+                np.exp(2 * self.a * x[:, 0:1])
+                + np.exp(2 * self.a * x[:, 1:2])
+                + np.exp(2 * self.a * x[:, 2:3])
+                + 2
+                * np.sin(self.a * x[:, 0:1] + self.d * x[:, 1:2])
+                * np.cos(self.a * x[:, 2:3] + self.d * x[:, 0:1])
+                * np.exp(self.a * (x[:, 1:2] + x[:, 2:3]))
+                + 2
+                * np.sin(self.a * x[:, 1:2] + self.d * x[:, 2:3])
+                * np.cos(self.a * x[:, 0:1] + self.d * x[:, 1:2])
+                * np.exp(self.a * (x[:, 2:3] + x[:, 0:1]))
+                + 2
+                * np.sin(self.a * x[:, 2:3] + self.d * x[:, 0:1])
+                * np.cos(self.a * x[:, 1:2] + self.d * x[:, 2:3])
+                * np.exp(self.a * (x[:, 0:1] + x[:, 1:2]))
+            )
+            * np.exp(-2 * self.d ** 2 * x[:, 3:4])
+        )
+    
+    def sol(self, x):
+        return np.concatenate(
+            (
+                self.u_func(x),
+                self.v_func(x),
+                self.w_func(x),
+                self.p_func(x),
+            ),
+            axis=1,
+        )
+    
+    def gen_data(self):
+        bc_u = dde.icbc.DirichletBC(self.geomtime, self.u_func, lambda _, on_boundary: on_boundary, component=0)
+        bc_v = dde.icbc.DirichletBC(self.geomtime, self.v_func, lambda _, on_boundary: on_boundary, component=1)
+        bc_w = dde.icbc.DirichletBC(self.geomtime, self.w_func, lambda _, on_boundary: on_boundary, component=2)
+
+        ic_u = dde.icbc.IC(self.geomtime, self.u_func, lambda _, on_initial: on_initial, component=0)
+        ic_v = dde.icbc.IC(self.geomtime, self.v_func, lambda _, on_initial: on_initial, component=1)
+        ic_w = dde.icbc.IC(self.geomtime, self.w_func, lambda _, on_initial: on_initial, component=2)
+        return dde.data.TimePDE(self.geomtime, 
+                                self.pde, 
+                                [bc_u, bc_v, bc_w, ic_u, ic_v, ic_w],
+                                num_domain=self.NumDomain,
+                                num_boundary=5000,
+                                num_initial=5000,
+                                num_test=10000,
+                                )
+    
+    def set_axes(self, axes):
+        axes.set_xlim(0, 1)
+        axes.set_ylim(-1, 1)
+        axes.set_xlabel('t')
+        axes.set_ylabel('x')
+
+    def plot_data(self, X, axes=None):
+        from matplotlib import pyplot as plt
+        if axes is None:
+            fig, axes = plt.subplots()
+        self.set_axes(axes)
+        axes.scatter(X[:, -1], X[:, 2])
+        return axes
+    
+    def plot_heatmap_at_axes(self, X, y, axes, title):
+        axes.set_title(title)
+        self.set_axes(axes)
+        return axes.pcolormesh(X[:, -1].reshape(1000, 1000), X[:, 2].reshape(1000, 1000), y.reshape(1000, 1000), cmap='rainbow')
+    
+    def plot_result(self, solver, colorbar=[0,0,0]):
+        from matplotlib import pyplot as plt
+        X = np.array([[0, 0, x, t] for x in np.linspace(-1, 1, 1000) for t in np.linspace(0, 1, 1000)])
+        y = self.sol(X)[:,0]
+        model_y = solver.model.predict(X)[:,0]
+
+        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+        axs = []
+        axs.append(self.plot_heatmap_at_axes(X, y, axes=axes[0], title='Exact solution'))
+        axs.append(self.plot_heatmap_at_axes(X, model_y, axes[1], title=solver.name))
+        axs.append(self.plot_heatmap_at_axes(X, np.abs(model_y - y) , axes[2], title='Absolute error'))
+        
+        for needColorbar, ax, axe in zip(colorbar, axs, axes):
+            if needColorbar:
+                fig.colorbar(ax, ax=axe)
+        plt.show()
+        return fig, axes
