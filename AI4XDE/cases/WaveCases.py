@@ -14,7 +14,7 @@ class WaveCase1D(PDECases):
                  use_output_transform=False,
                  inverse=False,
                  layer_size = [2] + [32] * 3 + [1],
-                 activation = 'tanh',
+                 activation = 'sin',
                  initializer = 'Glorot uniform'):
         self.c = c
         self.interval = interval
@@ -113,3 +113,37 @@ class Wave_1D_STMsFFN(WaveCase1D):
         )
         net.apply_feature_transform(lambda x: (x - 0.5) * 2 * np.sqrt(3))
         return net
+    
+class Wave_1D_Hard_Boundary(WaveCase1D):
+    """Case of Wave equation.
+    Implementation of Wave equation example in paper https://arxiv.org/abs/2012.10047.
+    References:
+    https://github.com/PredictiveIntelligenceLab/MultiscalePINNs
+    """
+    def __init__(self, 
+                 NumDomain=2000, 
+                 layer_size=[2] + [100] * 5 + [1], 
+                 activation='sin', 
+                 initializer='Glorot normal'):
+        super().__init__('Wave equation',
+                          c=2, 
+                          interval=[0,1], 
+                          time_interval=[0,1], 
+                          NumDomain=NumDomain,
+                          use_output_transform=True,
+                          layer_size=layer_size,
+                          activation=activation,
+                          initializer=initializer)
+    
+    def sol(self, x):
+        return np.sin(np.pi * x[:, 0:1]) * np.cos(2 * np.pi * x[:, 1:2]) + 0.5 * np.sin(4 * np.pi * x[:, 0:1]) * np.cos(
+            8 * np.pi * x[:, 1:2])
+
+    def gen_data(self):
+        return dde.data.TimePDE(self.geomtime, self.pde, [], num_domain=self.NumDomain, train_distribution='pseudo',
+                            solution=self.sol, num_test=10000)
+    
+    def output_transform(self, x, y):
+        x_in = x[:, 0:1]
+        t_in = x[:, 1:2]
+        return 20 * y * x_in * (1 - x_in) * t_in ** 2 + bkd.sin(np.pi * x_in) + 0.5 * bkd.sin(4 * np.pi * x_in)
