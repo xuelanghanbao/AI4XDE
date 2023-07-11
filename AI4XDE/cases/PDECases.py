@@ -1938,3 +1938,110 @@ class Beltrami_flow(PDECases):
                 fig.colorbar(ax, ax=axe)
         plt.show()
         return fig, axes
+    
+class Schrodinger(PDECases):
+    def __init__(self, 
+                 NumDomain=10000, 
+                 layer_size=[2] + [100] * 4 + [2], 
+                 activation='tanh', 
+                 initializer='Glorot normal'):
+        super().__init__(name='Schrodinger equation', NumDomain=NumDomain, use_output_transform=False, layer_size=layer_size, activation=activation, initializer=initializer)
+    
+    def gen_pde(self):
+        def pde(x, y):
+            u = y[:, 0:1]
+            v = y[:, 1:2]
+
+            u_t = dde.grad.jacobian(y, x, i=0, j=1)
+            v_t = dde.grad.jacobian(y, x, i=1, j=1)
+
+            u_xx = dde.grad.hessian(y, x, component=0, i=0, j=0)
+            v_xx = dde.grad.hessian(y, x, component=1, i=0, j=0)
+
+            f_u = u_t + 0.5 * v_xx + (u ** 2 + v ** 2) * v
+            f_v = v_t - 0.5 * u_xx - (u ** 2 + v ** 2) * u
+
+            return [f_u, f_v]
+        return pde
+    
+    def gen_testdata(self):
+        import os
+        from scipy.io import loadmat
+        basepath = os.path.abspath(__file__)
+        folder = os.path.dirname(os.path.dirname(basepath))
+        data_path = os.path.join(folder, 'data/NLS.mat')
+        data = loadmat(data_path)
+        t = data['tt']
+        x = data['x']
+        u = data['uu']
+        dt = dx = 0.01
+        xx, tt = np.meshgrid(x, t)
+        X = np.vstack((np.ravel(xx), np.ravel(tt))).T
+        y = u.T.flatten()[:, None]
+        y = np.hstack((y.real, y.imag))
+        return X, y
+
+    def gen_geomtime(self):
+        geom = dde.geometry.Interval(-5, 5)
+        timedomain = dde.geometry.TimeDomain(0, np.pi / 2)
+        return dde.geometry.GeometryXTime(geom, timedomain)
+    
+    def gen_data(self):
+        bc_u_0 = dde.icbc.PeriodicBC(
+            self.geomtime, 0, lambda _, on_boundary: on_boundary, derivative_order=0, component=0
+        )
+        bc_u_1 = dde.icbc.PeriodicBC(
+            self.geomtime, 0, lambda _, on_boundary: on_boundary, derivative_order=1, component=0
+        )
+        bc_v_0 = dde.icbc.PeriodicBC(
+            self.geomtime, 0, lambda _, on_boundary: on_boundary, derivative_order=0, component=1
+        )
+        bc_v_1 = dde.icbc.PeriodicBC(
+            self.geomtime, 0, lambda _, on_boundary: on_boundary, derivative_order=1, component=1
+        )
+        def init_cond_u(x):
+            return 2 / np.cosh(x[:, 0:1])
+        def init_cond_v(x):
+            return 0
+        ic_u = dde.icbc.IC(self.geomtime, init_cond_u, lambda _, on_initial: on_initial, component=0)
+        ic_v = dde.icbc.IC(self.geomtime, init_cond_v, lambda _, on_initial: on_initial, component=1)
+        return dde.data.TimePDE(self.geomtime, self.pde, [bc_u_0, bc_u_1, bc_v_0, bc_v_1, ic_u, ic_v], self.NumDomain, num_boundary=20,num_initial=200, train_distribution="pseudo")
+    
+    def set_axes(self, axes):
+        axes.set_xlim(0, np.pi / 2)
+        axes.set_ylim(-5, 5)
+        axes.set_xlabel('t')
+        axes.set_ylabel('x')
+
+    def plot_data(self, X, axes=None):
+        from matplotlib import pyplot as plt
+        if axes is None:
+            fig, axes = plt.subplots()
+        self.set_axes(axes)
+        axes.scatter(X[:, 1], X[:, 0])
+        return axes
+    
+    def plot_heatmap_at_axes(self, X, y, axes, title):
+        axes.set_title(title)
+        self.set_axes(axes)
+        return axes.pcolormesh(X[:, 1].reshape(201, 256), X[:, 0].reshape(201, 256), y.reshape(201, 256), cmap='rainbow')
+    
+    def plot_result(self, solver, colorbar=[0,0,0]):
+        from matplotlib import pyplot as plt
+        X, y = self.gen_testdata()
+        model_y = solver.model.predict(X)
+
+        y = y[:,0]
+        model_y = model_y[:,0]
+
+        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+        axs = []
+        axs.append(self.plot_heatmap_at_axes(X, y, axes=axes[0], title='Exact solution'))
+        axs.append(self.plot_heatmap_at_axes(X, model_y, axes[1], title=solver.name))
+        axs.append(self.plot_heatmap_at_axes(X, np.abs(model_y - y) , axes[2], title='Absolute error'))
+        
+        for needColorbar, ax, axe in zip(colorbar, axs, axes):
+            if needColorbar:
+                fig.colorbar(ax, ax=axe)
+        plt.show()
+        return fig, axes
