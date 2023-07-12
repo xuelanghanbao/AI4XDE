@@ -6,17 +6,17 @@ from ..solver.PDESolver import PINNSolver
 
 dde.optimizers.config.set_LBFGS_options(maxiter=1000)
 
+
 class R3Sampling(PINNSolver):
-    def __init__(self, 
-                 PDECase, 
-                 max_iter=100,
-                 causally_sampling=False,
-                 beta_lr = 0.001,
-                 tol = 20):
-        name = 'R3Sampling'
+    def __init__(
+        self, PDECase, max_iter=100, causally_sampling=False, beta_lr=0.001, tol=20
+    ):
+        name = "R3Sampling"
         if causally_sampling:
-            name += '_causal'
-            PDECase.data.pde = lambda x, y: PDECase.pde(x, y) * self.causal_weight(bkd.to_numpy(x), tensor=True)
+            name += "_causal"
+            PDECase.data.pde = lambda x, y: PDECase.pde(x, y) * self.causal_weight(
+                bkd.to_numpy(x), tensor=True
+            )
         super().__init__(name=name, PDECase=PDECase)
         self.gamma = -0.5
         self.alpha = 5
@@ -31,10 +31,10 @@ class R3Sampling(PINNSolver):
     def causal_weight(self, X, tensor=False):
         X = X[:, -1]
         X = X / (max(X) - min(X))
-        weight = (1-np.tanh(self.alpha*(X-self.gamma))) /2
+        weight = (1 - np.tanh(self.alpha * (X - self.gamma))) / 2
         weight = weight.reshape(-1)
         if tensor:
-            weight = bkd.pow(bkd.from_numpy(weight),1/2)
+            weight = bkd.pow(bkd.from_numpy(weight), 1 / 2)
         return weight
 
     def residual(self, X, causally_sampling=False):
@@ -48,11 +48,10 @@ class R3Sampling(PINNSolver):
         self.train_step()
 
         for i in range(self.max_iter):
-
             X = self.PDECase.data.train_x_all
             res = self.residual(X, self.causally_sampling)
             threshold = np.mean(res)
-            X_retained=X[np.where(res>threshold)]
+            X_retained = X[np.where(res > threshold)]
             self.PDECase.data.replace_with_anchors(X_retained)
 
             N_r = len(X) - len(X_retained)
@@ -62,9 +61,8 @@ class R3Sampling(PINNSolver):
 
             self.train_step(iterations=1000)
 
-            
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     PDECase = Burgers(NumDomain=2000)
     solver = R3Sampling(PDECase=PDECase)
     solver.train()

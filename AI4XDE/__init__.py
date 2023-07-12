@@ -1,8 +1,4 @@
-__all__ = [
-    "algorithm",
-    "cases",
-    "solver"
-]
+__all__ = ["algorithm", "cases", "solver"]
 
 from . import algorithm
 from . import cases

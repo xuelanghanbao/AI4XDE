@@ -6,7 +6,7 @@ __all__ = [
     "Random_R",
     "RAR_D",
     "RAR_G",
-    "Uniform", 
+    "Uniform",
 ]
 
 from .HPO import HPO

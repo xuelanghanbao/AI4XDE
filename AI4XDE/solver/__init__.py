@@ -1,5 +1,3 @@
-__all__ = [
-    "PINNSolver"
-]
+__all__ = ["PINNSolver"]
 
 from .PDESolver import PINNSolver

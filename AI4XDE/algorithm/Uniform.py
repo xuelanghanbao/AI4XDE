@@ -5,21 +5,41 @@ from ..cases.PDECases import Burgers
 from ..solver.PDESolver import PINNSolver
 from distutils.version import LooseVersion
 
+
 class Uniform(PINNSolver):
     def __init__(self, PDECase, method):
         self.method = method
-        super().__init__(name=f'Uniform_{method}', PDECase=PDECase)
-    
+        super().__init__(name=f"Uniform_{method}", PDECase=PDECase)
+
     def gen_data(self):
-        if self.method == 'Grid':
-            data = dde.data.TimePDE(self.PDECase.geomtime, self.PDECase.pde, [], num_domain=self.PDECase.NumDomain, train_distribution='uniform')
-        elif self.method == 'Random':
-            data = dde.data.TimePDE(self.PDECase.geomtime, self.PDECase.pde, [], num_domain=self.PDECase.NumDomain, train_distribution='pseudo')
-        elif self.method in ['LHS', 'Halton', 'Hammersley', 'Sobol']:
+        if self.method == "Grid":
+            data = dde.data.TimePDE(
+                self.PDECase.geomtime,
+                self.PDECase.pde,
+                [],
+                num_domain=self.PDECase.NumDomain,
+                train_distribution="uniform",
+            )
+        elif self.method == "Random":
+            data = dde.data.TimePDE(
+                self.PDECase.geomtime,
+                self.PDECase.pde,
+                [],
+                num_domain=self.PDECase.NumDomain,
+                train_distribution="pseudo",
+            )
+        elif self.method in ["LHS", "Halton", "Hammersley", "Sobol"]:
             sample_pts = self.quasirandom(self.PDECase.NumDomain, self.method)
-            data = dde.data.TimePDE(self.PDECase.geomtime, self.PDECase.pde, [], num_domain=0, train_distribution='uniform', anchors=sample_pts)
+            data = dde.data.TimePDE(
+                self.PDECase.geomtime,
+                self.PDECase.pde,
+                [],
+                num_domain=0,
+                train_distribution="uniform",
+                anchors=sample_pts,
+            )
         return data
-    
+
     def quasirandom(self, n_samples, sampler):
         space = [(-1.0, 1.0), (0.0, 1.0)]
         if sampler == "LHS":
@@ -37,20 +57,19 @@ class Uniform(PINNSolver):
                 sampler = skopt.sampler.Sobol(min_skip=2, max_skip=2, randomize=False)
             else:
                 sampler = skopt.sampler.Sobol(skip=0, randomize=False)
-                return np.array(
-                    sampler.generate(space, n_samples + 2)[2:]
-                )
+                return np.array(sampler.generate(space, n_samples + 2)[2:])
         return np.array(sampler.generate(space, n_samples))
-    
-if __name__ == '__main__':
-    PDECase = Burgers(NumDomain=2000)
-    solver = Uniform(PDECase=PDECase, method='Grid')
 
-    #solver = Uniform(PDECase=PDECase, method='Random')
-    #solver = Uniform(PDECase=PDECase, method='LHS')
-    #solver = Uniform(PDECase=PDECase, method='Halton')
-    #solver = Uniform(PDECase=PDECase, method='Hammersley')
-    #solver = Uniform(PDECase=PDECase, method='Sobol')
+
+if __name__ == "__main__":
+    PDECase = Burgers(NumDomain=2000)
+    solver = Uniform(PDECase=PDECase, method="Grid")
+
+    # solver = Uniform(PDECase=PDECase, method='Random')
+    # solver = Uniform(PDECase=PDECase, method='LHS')
+    # solver = Uniform(PDECase=PDECase, method='Halton')
+    # solver = Uniform(PDECase=PDECase, method='Hammersley')
+    # solver = Uniform(PDECase=PDECase, method='Sobol')
 
     solver.train()
     solver.save(add_time=True)
