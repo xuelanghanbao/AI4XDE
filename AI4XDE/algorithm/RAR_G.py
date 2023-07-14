@@ -8,13 +8,14 @@ dde.optimizers.config.set_LBFGS_options(maxiter=1000)
 
 
 class RAR_G(PINNSolver):
-    def __init__(self, PDECase):
+    def __init__(self, PDECase, iter=100):
+        self.iter = iter
         super().__init__(name="RAR_G", PDECase=PDECase)
 
     def closure(self):
         self.train_step()
 
-        for i in range(100):
+        for i in range(self.iter):
             X = self.PDECase.geomtime.random_points(100000)
             Y = np.abs(self.model.predict(X, operator=self.PDECase.pde))[:, 0]
             t1 = time.time()
