@@ -10,7 +10,6 @@ class PDECases(ABC):
         name,
         NumDomain=2000,
         use_output_transform=False,
-        inverse=False,
         layer_size=[2] + [32] * 3 + [1],
         activation="tanh",
         initializer="Glorot uniform",
@@ -22,6 +21,7 @@ class PDECases(ABC):
         self.pde = self.gen_pde()
         self.geomtime = self.gen_geomtime()
         self.data = self.gen_data()
+        self.compile = self.gen_compile()
 
     def gen_net(self, layer_size, activation, initializer):
         net = dde.nn.FNN(layer_size, activation, initializer)
@@ -48,6 +48,33 @@ class PDECases(ABC):
             return x, y
         else:
             raise Warning("You must rewrite one of sol() and gen_testdata()")
+
+    def gen_compile(
+        self,
+        loss_weights=None,
+        external_trainable_variables=None,
+    ):
+        def compile(
+            model,
+            optimizer,
+            lr=None,
+            loss="MSE",
+            metrics=None,
+            decay=None,
+        ):
+            loss_weights = None
+            external_trainable_variables = None
+            model.compile(
+                optimizer,
+                lr,
+                loss,
+                metrics,
+                decay,
+                loss_weights,
+                external_trainable_variables,
+            )
+
+        return compile
 
     def output_transform(self, x, y):
         pass
@@ -430,7 +457,6 @@ class Diffusion_Reaction_Inverse(PDECases):
             name="Diffusion_Reaction_Inverse",
             NumDomain=NumDomain,
             use_output_transform=use_output_transform,
-            inverse=True,
             layer_size=layer_size,
             activation=activation,
             initializer=initializer,
@@ -509,6 +535,21 @@ class Diffusion_Reaction_Inverse(PDECases):
             train_distribution="pseudo",
             num_test=1000,
         )
+
+    def plot_result(self, solver, axes=None, exact=True):
+        from matplotlib import pyplot as plt
+
+        X, y = self.gen_testdata()
+        if axes is None:
+            fig, axes = plt.subplots()
+        if exact:
+            axes.plot(X, y, label="Exact")
+        axes.plot(X, solver.model.predict(X), "--", label="Prediction")
+        axes.legend()
+        axes.set_xlabel("x")
+        axes.set_ylabel("y")
+        axes.set_title(self.name)
+        return fig, axes
 
 
 class A_Simple_ODE(PDECases):

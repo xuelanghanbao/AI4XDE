@@ -40,7 +40,7 @@ class HPO(PINNSolver):
             "Glorot uniform",
         )
         self.model = dde.Model(self.PDECase.data, self.PDECase.net)
-        self.model.compile("adam", lr=learning_rate)
+        self.PDECase.compile("adam", lr=learning_rate)
         return self.model
 
     def train_step(self):

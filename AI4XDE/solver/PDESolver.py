@@ -77,9 +77,9 @@ class PINNSolver:
         self.error.append(np.array(error))
 
     def train_step(self, lr=1e-3, iterations=15000, callbacks=None, eval=True):
-        self.model.compile("adam", lr=lr)
+        self.PDECase.compile(self.model, "adam", lr=lr)
         self.model.train(iterations=iterations, callbacks=callbacks)
-        self.model.compile("L-BFGS")
+        self.PDECase.compile(self.model, "L-BFGS")
         self.losshistory, self.train_state = self.model.train()
         if eval:
             self.eval()
