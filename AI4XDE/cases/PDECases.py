@@ -62,8 +62,6 @@ class PDECases(ABC):
             metrics=None,
             decay=None,
         ):
-            loss_weights = None
-            external_trainable_variables = None
             model.compile(
                 optimizer,
                 lr,
