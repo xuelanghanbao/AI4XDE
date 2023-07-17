@@ -9,8 +9,8 @@ class InverseCase(PDECases):
     def __init__(
         self,
         name,
+        external_trainable_variables,
         NumDomain=2000,
-        external_trainable_variables=None,
         use_output_transform=False,
         layer_size=[2] + [32] * 3 + [1],
         activation="tanh",
@@ -23,9 +23,7 @@ class InverseCase(PDECases):
             layer_size=layer_size,
             activation=activation,
             initializer=initializer,
-        )
-        self.compile = self.gen_compile(
-            external_trainable_variables=external_trainable_variables
+            external_trainable_variables=external_trainable_variables,
         )
 
     @abstractmethod
@@ -54,8 +52,8 @@ class Lorenz_Inverse(InverseCase):
         self.C3 = dde.Variable(1.0)
         super().__init__(
             "Inverse problem for the Lorenz system",
-            NumDomain,
             external_trainable_variables=[self.C1, self.C2, self.C3],
+            NumDomain=NumDomain,
             use_output_transform=False,
             layer_size=layer_size,
             activation=activation,
@@ -123,18 +121,7 @@ class Lorenz_Inverse(InverseCase):
         C1_error = np.abs(C1_true - C1_pred)
         C2_error = np.abs(C2_true - C2_pred)
         C3_error = np.abs(C3_true - C3_pred)
-        print(
-            "C1 true: {:.2f}, C2 true: {:.2f}, C3 true: {:.2f}".format(
-                C1_true, C2_true, C3_true
-            )
-        )
-        print(
-            "C1 pred: {:.2f}, C2 pred: {:.2f}, C3 pred: {:.2f}".format(
-                C1_pred, C2_pred, C3_pred
-            )
-        )
-        print(
-            "C1 error: {:.2f}, C2 error: {:.2f}, C3 error: {:.2f}".format(
-                C1_error, C2_error, C3_error
-            )
-        )
+
+        print(f"C1 true: {C1_true}, C2 true: {C2_true}, C3 true: {C3_true}")
+        print(f"C1 pred: {C1_pred}, C2 pred: {C2_pred}, C3 pred: {C3_pred}")
+        print(f"C1 error: {C1_error}, C2 error: {C2_error}, C3 error: {C3_error}")

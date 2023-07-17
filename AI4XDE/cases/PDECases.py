@@ -13,6 +13,9 @@ class PDECases(ABC):
         layer_size=[2] + [32] * 3 + [1],
         activation="tanh",
         initializer="Glorot uniform",
+        metrics=None,
+        loss_weights=None,
+        external_trainable_variables=None,
     ):
         self.name = name
         self.NumDomain = NumDomain
@@ -21,7 +24,9 @@ class PDECases(ABC):
         self.pde = self.gen_pde()
         self.geomtime = self.gen_geomtime()
         self.data = self.gen_data()
-        self.compile = self.gen_compile()
+        self.compile = self.gen_compile(
+            metrics, loss_weights, external_trainable_variables
+        )
 
     def gen_net(self, layer_size, activation, initializer):
         net = dde.nn.FNN(layer_size, activation, initializer)
@@ -51,6 +56,7 @@ class PDECases(ABC):
 
     def gen_compile(
         self,
+        metrics=None,
         loss_weights=None,
         external_trainable_variables=None,
     ):
@@ -59,7 +65,6 @@ class PDECases(ABC):
             optimizer,
             lr=None,
             loss="MSE",
-            metrics=None,
             decay=None,
         ):
             model.compile(
@@ -91,465 +96,6 @@ class PDECases(ABC):
         self.data = self.gen_data()
 
 
-class Burgers(PDECases):
-    def __init__(
-        self,
-        NumDomain=2000,
-        layer_size=[2] + [64] * 3 + [1],
-        activation="tanh",
-        initializer="Glorot normal",
-    ):
-        super().__init__(
-            name="Burgers",
-            NumDomain=NumDomain,
-            use_output_transform=True,
-            layer_size=layer_size,
-            activation=activation,
-            initializer=initializer,
-        )
-
-    def gen_pde(self):
-        def pde(x, y):
-            dy_x = dde.grad.jacobian(y, x, i=0, j=0)
-            dy_t = dde.grad.jacobian(y, x, i=0, j=1)
-            dy_xx = dde.grad.hessian(y, x, i=0, j=0)
-            return dy_t + y * dy_x - 0.01 / np.pi * dy_xx
-
-        return pde
-
-    def gen_geomtime(self):
-        geom = dde.geometry.Interval(-1, 1)
-        timedomain = dde.geometry.TimeDomain(0, 1)
-        return dde.geometry.GeometryXTime(geom, timedomain)
-
-    def gen_data(self):
-        return dde.data.TimePDE(
-            self.geomtime,
-            self.pde,
-            [],
-            num_domain=self.NumDomain,
-            num_test=10000,
-            train_distribution="pseudo",
-        )
-
-    def gen_testdata(self):
-        import os
-
-        basepath = os.path.abspath(__file__)
-        folder = os.path.dirname(os.path.dirname(basepath))
-        data_path = os.path.join(folder, "data/Burgers.npz")
-        data = np.load(data_path)
-        t, x, exact = data["t"], data["x"], data["usol"].T
-        xx, tt = np.meshgrid(x, t)
-        X = np.vstack((np.ravel(xx), np.ravel(tt))).T
-        y = exact.flatten()[:, None]
-        return X, y
-
-    def output_transform(self, x, y):
-        return -bkd.sin(np.pi * x[:, 0:1]) + (1 - x[:, 0:1] ** 2) * (x[:, 1:]) * y
-
-    def set_axes(self, axes):
-        axes.set_xlim(0, 1)
-        axes.set_ylim(-1, 1)
-        axes.set_xlabel("t")
-        axes.set_ylabel("x")
-
-    def plot_data(self, X, axes=None):
-        from matplotlib import pyplot as plt
-
-        if axes is None:
-            fig, axes = plt.subplots()
-        self.set_axes(axes)
-        axes.scatter(X[:, 1], X[:, 0])
-        return axes
-
-    def plot_heatmap_at_axes(self, X, y, axes, title):
-        axes.set_title(title)
-        self.set_axes(axes)
-        return axes.pcolormesh(
-            X[:, 1].reshape(100, 256),
-            X[:, 0].reshape(100, 256),
-            y.reshape(100, 256),
-            cmap="rainbow",
-        )
-
-    def plot_result(self, solver, colorbar=[0, 0, 0]):
-        from matplotlib import pyplot as plt
-
-        X, y = self.gen_testdata()
-        model_y = solver.model.predict(X)
-
-        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-        axs = []
-        axs.append(
-            self.plot_heatmap_at_axes(X, y, axes=axes[0], title="Exact solution")
-        )
-        axs.append(self.plot_heatmap_at_axes(X, model_y, axes[1], title=solver.name))
-        axs.append(
-            self.plot_heatmap_at_axes(
-                X, np.abs(model_y - y), axes[2], title="Absolute error"
-            )
-        )
-
-        for needColorbar, ax, axe in zip(colorbar, axs, axes):
-            if needColorbar:
-                fig.colorbar(ax, ax=axe)
-        plt.show()
-        return fig, axes
-
-
-class AllenCahn(PDECases):
-    """Case of Allen-Cahn equation.
-    Implementation of Allen-Cahn equation example in paper https://arxiv.org/abs/2111.02801.
-    """
-
-    def __init__(
-        self,
-        NumDomain=2000,
-        layer_size=[2] + [64] * 3 + [1],
-        activation="tanh",
-        initializer="Glorot normal",
-    ):
-        super().__init__(
-            name="AllenCahn",
-            NumDomain=NumDomain,
-            use_output_transform=True,
-            layer_size=layer_size,
-            activation=activation,
-            initializer=initializer,
-        )
-
-    def gen_pde(self):
-        def pde(x, y):
-            u = y
-            du_xx = dde.grad.hessian(y, x, i=0, j=0)
-            du_t = dde.grad.jacobian(y, x, j=1)
-            return du_t - 0.001 * du_xx + 5 * (u**3 - u)
-
-        return pde
-
-    def gen_geomtime(self):
-        geom = dde.geometry.Interval(-1, 1)
-        timedomain = dde.geometry.TimeDomain(0, 1)
-        return dde.geometry.GeometryXTime(geom, timedomain)
-
-    def gen_data(self):
-        return dde.data.TimePDE(
-            self.geomtime,
-            self.pde,
-            [],
-            num_domain=self.NumDomain,
-            num_test=10000,
-            train_distribution="pseudo",
-        )
-
-    def gen_testdata(self):
-        import os
-        from scipy.io import loadmat
-
-        basepath = os.path.abspath(__file__)
-        folder = os.path.dirname(os.path.dirname(basepath))
-        data_path = os.path.join(folder, "data/Allen_Cahn.mat")
-        data = loadmat(data_path)
-        t = data["t"]
-        x = data["x"]
-        u = data["u"]
-        dt = dx = 0.01
-        xx, tt = np.meshgrid(x, t)
-        X = np.vstack((np.ravel(xx), np.ravel(tt))).T
-        y = u.flatten()[:, None]
-        return X, y
-
-    def output_transform(self, x, y):
-        x_in = x[:, 0:1]
-        t_in = x[:, 1:2]
-        return t_in * (1 + x_in) * (1 - x_in) * y + bkd.square(x_in) * bkd.cos(
-            np.pi * x_in
-        )
-
-    def set_axes(self, axes):
-        axes.set_xlim(0, 1)
-        axes.set_ylim(-1, 1)
-        axes.set_xlabel("t")
-        axes.set_ylabel("x")
-
-    def plot_data(self, X, axes=None):
-        from matplotlib import pyplot as plt
-
-        if axes is None:
-            fig, axes = plt.subplots()
-        self.set_axes(axes)
-        axes.scatter(X[:, 1], X[:, 0])
-        return axes
-
-    def plot_heatmap_at_axes(self, X, y, axes, title):
-        axes.set_title(title)
-        self.set_axes(axes)
-        return axes.pcolormesh(
-            X[:, 1].reshape(101, 201),
-            X[:, 0].reshape(101, 201),
-            y.reshape(101, 201),
-            cmap="rainbow",
-        )
-
-    def plot_result(self, solver, colorbar=[0, 0, 0]):
-        from matplotlib import pyplot as plt
-
-        X, y = self.gen_testdata()
-        model_y = solver.model.predict(X)
-
-        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-        axs = []
-        axs.append(
-            self.plot_heatmap_at_axes(X, y, axes=axes[0], title="Exact solution")
-        )
-        axs.append(self.plot_heatmap_at_axes(X, model_y, axes[1], title=solver.name))
-        axs.append(
-            self.plot_heatmap_at_axes(
-                X, np.abs(model_y - y), axes[2], title="Absolute error"
-            )
-        )
-
-        for needColorbar, ax, axe in zip(colorbar, axs, axes):
-            if needColorbar:
-                fig.colorbar(ax, ax=axe)
-        plt.show()
-        return fig, axes
-
-
-class Diffusion(PDECases):
-    def __init__(
-        self,
-        NumDomain=40,
-        use_output_transform=True,
-        layer_size=[2] + [32] * 3 + [1],
-        activation="tanh",
-        initializer="Glorot normal",
-    ):
-        super().__init__(
-            name="Diffusion",
-            NumDomain=NumDomain,
-            use_output_transform=use_output_transform,
-            layer_size=layer_size,
-            activation=activation,
-            initializer=initializer,
-        )
-
-    def gen_pde(self):
-        def pde(x, y):
-            dy_t = dde.grad.jacobian(y, x, j=1)
-            dy_xx = dde.grad.hessian(y, x, j=0)
-            return (
-                dy_t
-                - dy_xx
-                + bkd.exp(-x[:, 1:])
-                * (bkd.sin(np.pi * x[:, 0:1]) - np.pi**2 * bkd.sin(np.pi * x[:, 0:1]))
-            )
-
-        return pde
-
-    def gen_geomtime(self):
-        geom = dde.geometry.Interval(-1, 1)
-        timedomain = dde.geometry.TimeDomain(0, 1)
-        return dde.geometry.GeometryXTime(geom, timedomain)
-
-    def sol(self, x):
-        return np.sin(np.pi * x[:, 0:1]) * np.exp(-x[:, 1:])
-
-    def gen_data(self):
-        if self.use_output_transform:
-            data = dde.data.TimePDE(
-                self.geomtime,
-                self.pde,
-                [],
-                num_domain=self.NumDomain,
-                solution=self.sol,
-                num_test=10000,
-            )
-        else:
-            bc = dde.icbc.DirichletBC(
-                self.geomtime, self.sol, lambda _, on_boundary: on_boundary
-            )
-            ic = dde.icbc.IC(self.geomtime, self.sol, lambda _, on_initial: on_initial)
-            icbc = [bc, ic]
-            data = dde.data.TimePDE(
-                self.geomtime,
-                self.pde,
-                icbc,
-                num_domain=self.NumDomain,
-                num_boundary=20,
-                num_initial=10,
-                solution=self.sol,
-                num_test=10000,
-            )
-        return data
-
-    def output_transform(self, x, y):
-        return bkd.sin(np.pi * x[:, 0:1]) + (1 - x[:, 0:1] ** 2) * (x[:, 1:]) * y
-
-    def set_axes(self, axes):
-        axes.set_xlim(0, 1)
-        axes.set_ylim(-1, 1)
-        axes.set_xlabel("t")
-        axes.set_ylabel("x")
-
-    def plot_data(self, X, axes=None):
-        from matplotlib import pyplot as plt
-
-        if axes is None:
-            fig, axes = plt.subplots()
-        self.set_axes(axes)
-        axes.scatter(X[:, 1], X[:, 0])
-        return axes
-
-    def plot_heatmap_at_axes(self, X, y, axes, title):
-        axes.set_title(title)
-        self.set_axes(axes)
-        return axes.pcolormesh(
-            X[:, 1].reshape(1000, 1000),
-            X[:, 0].reshape(1000, 1000),
-            y.reshape(1000, 1000),
-            cmap="rainbow",
-        )
-
-    def plot_result(self, solver, colorbar=[0, 0, 0]):
-        from matplotlib import pyplot as plt
-
-        X = np.array(
-            [[x, t] for x in np.linspace(-1, 1, 1000) for t in np.linspace(0, 1, 1000)]
-        )
-        y = self.sol(X)
-        model_y = solver.model.predict(X)
-
-        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-        axs = []
-        axs.append(
-            self.plot_heatmap_at_axes(X, y, axes=axes[0], title="Exact solution")
-        )
-        axs.append(self.plot_heatmap_at_axes(X, model_y, axes[1], title=solver.name))
-        axs.append(
-            self.plot_heatmap_at_axes(
-                X, np.abs(model_y - y), axes[2], title="Absolute error"
-            )
-        )
-
-        for needColorbar, ax, axe in zip(colorbar, axs, axes):
-            if needColorbar:
-                fig.colorbar(ax, ax=axe)
-        plt.show()
-        return fig, axes
-
-
-class Diffusion_Reaction_Inverse(PDECases):
-    def __init__(
-        self,
-        NumDomain=2000,
-        use_output_transform=False,
-        layer_size=[1, [20, 20], [20, 20], [20, 20], 2],
-        activation="tanh",
-        initializer="Glorot uniform",
-    ):
-        self.res = self.gen_res()
-        self.metrics = self.gen_metrics()
-        super().__init__(
-            name="Diffusion_Reaction_Inverse",
-            NumDomain=NumDomain,
-            use_output_transform=use_output_transform,
-            layer_size=layer_size,
-            activation=activation,
-            initializer=initializer,
-        )
-
-    def sol(self, x):
-        return self.res.sol(x)[0]
-
-    def gen_res(self):
-        from scipy.integrate import solve_bvp
-
-        def k(x):
-            return 0.1 + np.exp(-0.5 * (x - 0.5) ** 2 / 0.15**2)
-
-        def fun(x, y):
-            return np.vstack((y[1], 100 * (k(x) * y[0] + np.sin(2 * np.pi * x))))
-
-        def bc(ya, yb):
-            return np.array([ya[0], yb[0]])
-
-        a = np.linspace(0, 1, 1000)
-        b = np.zeros((2, a.size))
-
-        res = solve_bvp(fun, bc, a, b)
-        return res
-
-    def get_metrics(self, model):
-        xx = np.linspace(0, 1, 1001)[:, None]
-
-        def k(x):
-            return 0.1 + np.exp(-0.5 * (x - 0.5) ** 2 / 0.15**2)
-
-        def l2_u(_, __):
-            return dde.metrics.l2_relative_error(
-                self.sol(xx), model.predict(xx)[:, 0:1]
-            )
-
-        def l2_k(_, __):
-            return dde.metrics.l2_relative_error(k(xx), model.predict(xx)[:, 1:2])
-
-        return [l2_u, l2_k]
-
-    def gen_pde(self):
-        def pde(x, y):
-            u = y[:, 0:1]
-            k = y[:, 1:2]
-            du_xx = dde.grad.hessian(y, x, component=0)
-            return 0.01 * du_xx - k * u - bkd.sin(2 * np.pi * x)
-
-        return pde
-
-    def gen_net(self, layer_size, activation, initializer):
-        return dde.nn.PFNN(layer_size, activation, initializer)
-
-    def gen_geomtime(self):
-        return dde.geometry.Interval(0, 1)
-
-    def gen_data(self):
-        def gen_traindata(num):
-            xvals = np.linspace(0, 1, num)
-            yvals = self.sol(xvals)
-
-            return np.reshape(xvals, (-1, 1)), np.reshape(yvals, (-1, 1))
-
-        ob_x, ob_u = gen_traindata(8)
-        observe_u = dde.PointSetBC(ob_x, ob_u, component=0)
-        bc = dde.DirichletBC(
-            self.geomtime, self.sol, lambda _, on_boundary: on_boundary, component=0
-        )
-        return dde.data.PDE(
-            self.geomtime,
-            self.pde,
-            bcs=[bc, observe_u],
-            num_domain=self.NumDomain - 2,
-            num_boundary=2,
-            train_distribution="pseudo",
-            num_test=1000,
-        )
-
-    def plot_result(self, solver, axes=None, exact=True):
-        from matplotlib import pyplot as plt
-
-        X, y = self.gen_testdata()
-        if axes is None:
-            fig, axes = plt.subplots()
-        if exact:
-            axes.plot(X, y, label="Exact")
-        axes.plot(X, solver.model.predict(X), "--", label="Prediction")
-        axes.legend()
-        axes.set_xlabel("x")
-        axes.set_ylabel("y")
-        axes.set_title(self.name)
-        return fig, axes
-
-
 class A_Simple_ODE(PDECases):
     def __init__(
         self,
@@ -565,6 +111,7 @@ class A_Simple_ODE(PDECases):
             layer_size=layer_size,
             activation=activation,
             initializer=initializer,
+            metrics=["l2 relative error"],
         )
 
     def gen_pde(self):
@@ -748,6 +295,8 @@ class SecondOrderODE(PDECases):
             layer_size=layer_size,
             activation=activation,
             initializer=initializer,
+            metrics=["l2 relative error"],
+            loss_weights=[0.01, 1, 1],
         )
         self.ub = 200
         self.rb = 20
@@ -817,6 +366,7 @@ class Laplace_disk(PDECases):
             layer_size=layer_size,
             activation=activation,
             initializer=initializer,
+            metrics=["l2 relative error"],
         )
 
     def gen_pde(self):
@@ -918,6 +468,88 @@ class Laplace_disk(PDECases):
         return fig, axes
 
 
+class Euler_Beam(PDECases):
+    def __init__(
+        self,
+        NumDomain=10,
+        layer_size=[1] + [20] * 3 + [1],
+        activation="tanh",
+        initializer="Glorot normal",
+    ):
+        self.Re = 20
+        self.nu = 1 / self.Re
+        self.l = 1 / (2 * self.nu) - np.sqrt(1 / (4 * self.nu**2) + 4 * np.pi**2)
+        super().__init__(
+            name="Euler beam",
+            NumDomain=NumDomain,
+            use_output_transform=False,
+            layer_size=layer_size,
+            activation=activation,
+            initializer=initializer,
+            metrics=["l2 relative error"],
+        )
+
+    def ddy(self, x, y):
+        return dde.grad.hessian(y, x)
+
+    def dddy(self, x, y):
+        return dde.grad.jacobian(self.ddy(x, y), x)
+
+    def gen_pde(self):
+        def pde(x, y):
+            dy_xx = self.ddy(x, y)
+            dy_xxxx = dde.grad.hessian(dy_xx, x)
+            return dy_xxxx + 1
+
+        return pde
+
+    def sol(self, x):
+        return -(x**4) / 24 + x**3 / 6 - x**2 / 4
+
+    def gen_geomtime(self):
+        return dde.geometry.Interval(0, 1)
+
+    def gen_data(self):
+        def boundary_l(x, on_boundary):
+            return on_boundary and np.isclose(x[0], 0)
+
+        def boundary_r(x, on_boundary):
+            return on_boundary and np.isclose(x[0], 1)
+
+        bc1 = dde.icbc.DirichletBC(self.geomtime, lambda x: 0, boundary_l)
+        bc2 = dde.icbc.NeumannBC(self.geomtime, lambda x: 0, boundary_l)
+        bc3 = dde.icbc.OperatorBC(
+            self.geomtime, lambda x, y, _: self.ddy(x, y), boundary_r
+        )
+        bc4 = dde.icbc.OperatorBC(
+            self.geomtime, lambda x, y, _: self.dddy(x, y), boundary_r
+        )
+        return dde.data.PDE(
+            self.geomtime,
+            self.pde,
+            [bc1, bc2, bc3, bc4],
+            num_domain=self.NumDomain,
+            num_boundary=2,
+            solution=self.sol,
+            num_test=100,
+        )
+
+    def plot_result(self, solver, axes=None, exact=True):
+        from matplotlib import pyplot as plt
+
+        X, y = self.gen_testdata()
+        if axes is None:
+            fig, axes = plt.subplots()
+        if exact:
+            axes.plot(X, y, label="Exact")
+        axes.plot(X, solver.model.predict(X), "--", label="Prediction")
+        axes.legend()
+        axes.set_xlabel("t")
+        axes.set_ylabel("y")
+        axes.set_title(self.name)
+        return fig, axes
+
+
 class Helmholtz(PDECases):
     def __init__(
         self,
@@ -930,6 +562,10 @@ class Helmholtz(PDECases):
         self.n = 2
         self.k0 = 2 * np.pi * self.n
         self.hard_constraint = hard_constraint
+        if hard_constraint:
+            loss_weights = None
+        else:
+            loss_weights = [1, 100]
         super().__init__(
             name="Helmholtz equation over a 2D square domain",
             NumDomain=NumDomain,
@@ -937,6 +573,8 @@ class Helmholtz(PDECases):
             layer_size=layer_size,
             activation=activation,
             initializer=initializer,
+            metrics=["l2 relative error"],
+            loss_weights=loss_weights,
         )
 
     def gen_pde(self):
@@ -1074,6 +712,8 @@ class Helmholtz_Hole(PDECases):
             layer_size=layer_size,
             activation=activation,
             initializer=initializer,
+            metrics=["l2 relative error"],
+            loss_weights=[1, 10, 100],
         )
 
     def get_NumDomain(self, precision_train, precision_test):
@@ -1229,6 +869,7 @@ class Helmholtz_Sound_hard_Absorbing(PDECases):
             layer_size=layer_size,
             activation=activation,
             initializer=initializer,
+            metrics=["l2 relative error"],
         )
 
     def get_NumDomain(self):
@@ -1567,84 +1208,110 @@ class Kovasznay_Flow(PDECases):
         return fig, axes
 
 
-class Euler_Beam(PDECases):
+class Burgers(PDECases):
     def __init__(
         self,
-        NumDomain=10,
-        layer_size=[1] + [20] * 3 + [1],
+        NumDomain=2000,
+        layer_size=[2] + [64] * 3 + [1],
         activation="tanh",
         initializer="Glorot normal",
     ):
-        self.Re = 20
-        self.nu = 1 / self.Re
-        self.l = 1 / (2 * self.nu) - np.sqrt(1 / (4 * self.nu**2) + 4 * np.pi**2)
         super().__init__(
-            name="Euler beam",
+            name="Burgers",
             NumDomain=NumDomain,
-            use_output_transform=False,
+            use_output_transform=True,
             layer_size=layer_size,
             activation=activation,
             initializer=initializer,
         )
 
-    def ddy(self, x, y):
-        return dde.grad.hessian(y, x)
-
-    def dddy(self, x, y):
-        return dde.grad.jacobian(self.ddy(x, y), x)
-
     def gen_pde(self):
         def pde(x, y):
-            dy_xx = self.ddy(x, y)
-            dy_xxxx = dde.grad.hessian(dy_xx, x)
-            return dy_xxxx + 1
+            dy_x = dde.grad.jacobian(y, x, i=0, j=0)
+            dy_t = dde.grad.jacobian(y, x, i=0, j=1)
+            dy_xx = dde.grad.hessian(y, x, i=0, j=0)
+            return dy_t + y * dy_x - 0.01 / np.pi * dy_xx
 
         return pde
 
-    def sol(self, x):
-        return -(x**4) / 24 + x**3 / 6 - x**2 / 4
-
     def gen_geomtime(self):
-        return dde.geometry.Interval(0, 1)
+        geom = dde.geometry.Interval(-1, 1)
+        timedomain = dde.geometry.TimeDomain(0, 1)
+        return dde.geometry.GeometryXTime(geom, timedomain)
 
     def gen_data(self):
-        def boundary_l(x, on_boundary):
-            return on_boundary and np.isclose(x[0], 0)
-
-        def boundary_r(x, on_boundary):
-            return on_boundary and np.isclose(x[0], 1)
-
-        bc1 = dde.icbc.DirichletBC(self.geomtime, lambda x: 0, boundary_l)
-        bc2 = dde.icbc.NeumannBC(self.geomtime, lambda x: 0, boundary_l)
-        bc3 = dde.icbc.OperatorBC(
-            self.geomtime, lambda x, y, _: self.ddy(x, y), boundary_r
-        )
-        bc4 = dde.icbc.OperatorBC(
-            self.geomtime, lambda x, y, _: self.dddy(x, y), boundary_r
-        )
-        return dde.data.PDE(
+        return dde.data.TimePDE(
             self.geomtime,
             self.pde,
-            [bc1, bc2, bc3, bc4],
+            [],
             num_domain=self.NumDomain,
-            num_boundary=2,
-            solution=self.sol,
-            num_test=100,
+            num_test=10000,
+            train_distribution="pseudo",
         )
 
-    def plot_result(self, solver, axes=None, exact=True):
+    def gen_testdata(self):
+        import os
+
+        basepath = os.path.abspath(__file__)
+        folder = os.path.dirname(os.path.dirname(basepath))
+        data_path = os.path.join(folder, "data/Burgers.npz")
+        data = np.load(data_path)
+        t, x, exact = data["t"], data["x"], data["usol"].T
+        xx, tt = np.meshgrid(x, t)
+        X = np.vstack((np.ravel(xx), np.ravel(tt))).T
+        y = exact.flatten()[:, None]
+        return X, y
+
+    def output_transform(self, x, y):
+        return -bkd.sin(np.pi * x[:, 0:1]) + (1 - x[:, 0:1] ** 2) * (x[:, 1:]) * y
+
+    def set_axes(self, axes):
+        axes.set_xlim(0, 1)
+        axes.set_ylim(-1, 1)
+        axes.set_xlabel("t")
+        axes.set_ylabel("x")
+
+    def plot_data(self, X, axes=None):
+        from matplotlib import pyplot as plt
+
+        if axes is None:
+            fig, axes = plt.subplots()
+        self.set_axes(axes)
+        axes.scatter(X[:, 1], X[:, 0])
+        return axes
+
+    def plot_heatmap_at_axes(self, X, y, axes, title):
+        axes.set_title(title)
+        self.set_axes(axes)
+        return axes.pcolormesh(
+            X[:, 1].reshape(100, 256),
+            X[:, 0].reshape(100, 256),
+            y.reshape(100, 256),
+            cmap="rainbow",
+        )
+
+    def plot_result(self, solver, colorbar=[0, 0, 0]):
         from matplotlib import pyplot as plt
 
         X, y = self.gen_testdata()
-        if axes is None:
-            fig, axes = plt.subplots()
-        if exact:
-            axes.plot(X, y, label="Exact")
-        axes.plot(X, solver.model.predict(X), "--", label="Prediction")
-        axes.legend()
-        axes.set_xlabel("t")
-        axes.set_ylabel("y")
-        axes.set_title(self.name)
+        model_y = solver.model.predict(X)
+
+        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+        axs = []
+        axs.append(
+            self.plot_heatmap_at_axes(X, y, axes=axes[0], title="Exact solution")
+        )
+        axs.append(self.plot_heatmap_at_axes(X, model_y, axes[1], title=solver.name))
+        axs.append(
+            self.plot_heatmap_at_axes(
+                X, np.abs(model_y - y), axes[2], title="Absolute error"
+            )
+        )
+
+        for needColorbar, ax, axe in zip(colorbar, axs, axes):
+            if needColorbar:
+                fig.colorbar(ax, ax=axe)
+        plt.show()
         return fig, axes
 
 
@@ -1765,6 +1432,377 @@ class Heat(PDECases):
         return fig, axes
 
 
+class Diffusion(PDECases):
+    def __init__(
+        self,
+        NumDomain=40,
+        use_output_transform=True,
+        layer_size=[2] + [32] * 3 + [1],
+        activation="tanh",
+        initializer="Glorot normal",
+    ):
+        super().__init__(
+            name="Diffusion",
+            NumDomain=NumDomain,
+            use_output_transform=use_output_transform,
+            layer_size=layer_size,
+            activation=activation,
+            initializer=initializer,
+            metrics=["l2 relative error"],
+        )
+
+    def gen_pde(self):
+        def pde(x, y):
+            dy_t = dde.grad.jacobian(y, x, j=1)
+            dy_xx = dde.grad.hessian(y, x, j=0)
+            return (
+                dy_t
+                - dy_xx
+                + bkd.exp(-x[:, 1:])
+                * (bkd.sin(np.pi * x[:, 0:1]) - np.pi**2 * bkd.sin(np.pi * x[:, 0:1]))
+            )
+
+        return pde
+
+    def gen_geomtime(self):
+        geom = dde.geometry.Interval(-1, 1)
+        timedomain = dde.geometry.TimeDomain(0, 1)
+        return dde.geometry.GeometryXTime(geom, timedomain)
+
+    def sol(self, x):
+        return np.sin(np.pi * x[:, 0:1]) * np.exp(-x[:, 1:])
+
+    def gen_data(self):
+        if self.use_output_transform:
+            data = dde.data.TimePDE(
+                self.geomtime,
+                self.pde,
+                [],
+                num_domain=self.NumDomain,
+                solution=self.sol,
+                num_test=10000,
+            )
+        else:
+            bc = dde.icbc.DirichletBC(
+                self.geomtime, self.sol, lambda _, on_boundary: on_boundary
+            )
+            ic = dde.icbc.IC(self.geomtime, self.sol, lambda _, on_initial: on_initial)
+            icbc = [bc, ic]
+            data = dde.data.TimePDE(
+                self.geomtime,
+                self.pde,
+                icbc,
+                num_domain=self.NumDomain,
+                num_boundary=20,
+                num_initial=10,
+                solution=self.sol,
+                num_test=10000,
+            )
+        return data
+
+    def output_transform(self, x, y):
+        return bkd.sin(np.pi * x[:, 0:1]) + (1 - x[:, 0:1] ** 2) * (x[:, 1:]) * y
+
+    def set_axes(self, axes):
+        axes.set_xlim(0, 1)
+        axes.set_ylim(-1, 1)
+        axes.set_xlabel("t")
+        axes.set_ylabel("x")
+
+    def plot_data(self, X, axes=None):
+        from matplotlib import pyplot as plt
+
+        if axes is None:
+            fig, axes = plt.subplots()
+        self.set_axes(axes)
+        axes.scatter(X[:, 1], X[:, 0])
+        return axes
+
+    def plot_heatmap_at_axes(self, X, y, axes, title):
+        axes.set_title(title)
+        self.set_axes(axes)
+        return axes.pcolormesh(
+            X[:, 1].reshape(1000, 1000),
+            X[:, 0].reshape(1000, 1000),
+            y.reshape(1000, 1000),
+            cmap="rainbow",
+        )
+
+    def plot_result(self, solver, colorbar=[0, 0, 0]):
+        from matplotlib import pyplot as plt
+
+        X = np.array(
+            [[x, t] for x in np.linspace(-1, 1, 1000) for t in np.linspace(0, 1, 1000)]
+        )
+        y = self.sol(X)
+        model_y = solver.model.predict(X)
+
+        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+        axs = []
+        axs.append(
+            self.plot_heatmap_at_axes(X, y, axes=axes[0], title="Exact solution")
+        )
+        axs.append(self.plot_heatmap_at_axes(X, model_y, axes[1], title=solver.name))
+        axs.append(
+            self.plot_heatmap_at_axes(
+                X, np.abs(model_y - y), axes[2], title="Absolute error"
+            )
+        )
+
+        for needColorbar, ax, axe in zip(colorbar, axs, axes):
+            if needColorbar:
+                fig.colorbar(ax, ax=axe)
+        plt.show()
+        return fig, axes
+
+
+class Diffusion_reaction(PDECases):
+    def __init__(
+        self,
+        NumDomain=320,
+        layer_size=[2] + [30] * 6 + [1],
+        activation="tanh",
+        initializer="Glorot uniform",
+    ):
+        super().__init__(
+            name="Diffusion-reaction equation",
+            NumDomain=NumDomain,
+            use_output_transform=True,
+            layer_size=layer_size,
+            activation=activation,
+            initializer=initializer,
+            metrics=["l2 relative error"],
+        )
+
+    def gen_pde(self):
+        def pde(x, y):
+            dy_t = dde.grad.jacobian(y, x, i=0, j=1)
+            dy_xx = dde.grad.hessian(y, x, i=0, j=0)
+            d = 1
+            return (
+                dy_t
+                - d * dy_xx
+                - bkd.exp(-x[:, 1:])
+                * (
+                    3 * bkd.sin(2 * x[:, 0:1]) / 2
+                    + 8 * bkd.sin(3 * x[:, 0:1]) / 3
+                    + 15 * bkd.sin(4 * x[:, 0:1]) / 4
+                    + 63 * bkd.sin(8 * x[:, 0:1]) / 8
+                )
+            )
+
+        return pde
+
+    def sol(self, x):
+        return np.exp(-x[:, 1:]) * (
+            np.sin(x[:, 0:1])
+            + np.sin(2 * x[:, 0:1]) / 2
+            + np.sin(3 * x[:, 0:1]) / 3
+            + np.sin(4 * x[:, 0:1]) / 4
+            + np.sin(8 * x[:, 0:1]) / 8
+        )
+
+    def gen_geomtime(self):
+        geom = dde.geometry.Interval(-1, 1)
+        timedomain = dde.geometry.TimeDomain(0, 0.99)
+        return dde.geometry.GeometryXTime(geom, timedomain)
+
+    def output_transform(self, x, y):
+        return (
+            x[:, 1:2] * (np.pi**2 - x[:, 0:1] ** 2) * y
+            + bkd.sin(x[:, 0:1])
+            + bkd.sin(2 * x[:, 0:1]) / 2
+            + bkd.sin(3 * x[:, 0:1]) / 3
+            + bkd.sin(4 * x[:, 0:1]) / 4
+            + bkd.sin(8 * x[:, 0:1]) / 8
+        )
+
+    def gen_data(self):
+        return dde.data.TimePDE(
+            self.geomtime,
+            self.pde,
+            [],
+            num_domain=self.NumDomain,
+            num_test=80000,
+            solution=self.sol,
+        )
+
+    def set_axes(self, axes):
+        axes.set_xlim(0, 0.99)
+        axes.set_ylim(-1, 1)
+        axes.set_xlabel("t")
+        axes.set_ylabel("x")
+
+    def plot_data(self, X, axes=None):
+        from matplotlib import pyplot as plt
+
+        if axes is None:
+            fig, axes = plt.subplots()
+        self.set_axes(axes)
+        axes.scatter(X[:, 1], X[:, 0])
+        return axes
+
+    def plot_heatmap_at_axes(self, X, y, axes, title):
+        axes.set_title(title)
+        self.set_axes(axes)
+        return axes.pcolormesh(
+            X[:, 1].reshape(1000, 1000),
+            X[:, 0].reshape(1000, 1000),
+            y.reshape(1000, 1000),
+            cmap="rainbow",
+        )
+
+    def plot_result(self, solver, colorbar=[0, 0, 0]):
+        from matplotlib import pyplot as plt
+
+        X = np.array(
+            [
+                [x, t]
+                for x in np.linspace(-1, 1, 1000)
+                for t in np.linspace(0, 0.99, 1000)
+            ]
+        )
+        y = self.sol(X)
+        model_y = solver.model.predict(X)
+
+        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+        axs = []
+        axs.append(
+            self.plot_heatmap_at_axes(X, y, axes=axes[0], title="Exact solution")
+        )
+        axs.append(self.plot_heatmap_at_axes(X, model_y, axes[1], title=solver.name))
+        axs.append(
+            self.plot_heatmap_at_axes(
+                X, np.abs(model_y - y), axes[2], title="Absolute error"
+            )
+        )
+
+        for needColorbar, ax, axe in zip(colorbar, axs, axes):
+            if needColorbar:
+                fig.colorbar(ax, ax=axe)
+        plt.show()
+        return fig, axes
+
+
+class AllenCahn(PDECases):
+    """Case of Allen-Cahn equation.
+    Implementation of Allen-Cahn equation example in paper https://arxiv.org/abs/2111.02801.
+    """
+
+    def __init__(
+        self,
+        NumDomain=2000,
+        layer_size=[2] + [64] * 3 + [1],
+        activation="tanh",
+        initializer="Glorot normal",
+    ):
+        super().__init__(
+            name="AllenCahn",
+            NumDomain=NumDomain,
+            use_output_transform=True,
+            layer_size=layer_size,
+            activation=activation,
+            initializer=initializer,
+        )
+
+    def gen_pde(self):
+        def pde(x, y):
+            u = y
+            du_xx = dde.grad.hessian(y, x, i=0, j=0)
+            du_t = dde.grad.jacobian(y, x, j=1)
+            return du_t - 0.001 * du_xx + 5 * (u**3 - u)
+
+        return pde
+
+    def gen_geomtime(self):
+        geom = dde.geometry.Interval(-1, 1)
+        timedomain = dde.geometry.TimeDomain(0, 1)
+        return dde.geometry.GeometryXTime(geom, timedomain)
+
+    def gen_data(self):
+        return dde.data.TimePDE(
+            self.geomtime,
+            self.pde,
+            [],
+            num_domain=self.NumDomain,
+            num_test=10000,
+            train_distribution="pseudo",
+        )
+
+    def gen_testdata(self):
+        import os
+        from scipy.io import loadmat
+
+        basepath = os.path.abspath(__file__)
+        folder = os.path.dirname(os.path.dirname(basepath))
+        data_path = os.path.join(folder, "data/Allen_Cahn.mat")
+        data = loadmat(data_path)
+        t = data["t"]
+        x = data["x"]
+        u = data["u"]
+        dt = dx = 0.01
+        xx, tt = np.meshgrid(x, t)
+        X = np.vstack((np.ravel(xx), np.ravel(tt))).T
+        y = u.flatten()[:, None]
+        return X, y
+
+    def output_transform(self, x, y):
+        x_in = x[:, 0:1]
+        t_in = x[:, 1:2]
+        return t_in * (1 + x_in) * (1 - x_in) * y + bkd.square(x_in) * bkd.cos(
+            np.pi * x_in
+        )
+
+    def set_axes(self, axes):
+        axes.set_xlim(0, 1)
+        axes.set_ylim(-1, 1)
+        axes.set_xlabel("t")
+        axes.set_ylabel("x")
+
+    def plot_data(self, X, axes=None):
+        from matplotlib import pyplot as plt
+
+        if axes is None:
+            fig, axes = plt.subplots()
+        self.set_axes(axes)
+        axes.scatter(X[:, 1], X[:, 0])
+        return axes
+
+    def plot_heatmap_at_axes(self, X, y, axes, title):
+        axes.set_title(title)
+        self.set_axes(axes)
+        return axes.pcolormesh(
+            X[:, 1].reshape(101, 201),
+            X[:, 0].reshape(101, 201),
+            y.reshape(101, 201),
+            cmap="rainbow",
+        )
+
+    def plot_result(self, solver, colorbar=[0, 0, 0]):
+        from matplotlib import pyplot as plt
+
+        X, y = self.gen_testdata()
+        model_y = solver.model.predict(X)
+
+        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+        axs = []
+        axs.append(
+            self.plot_heatmap_at_axes(X, y, axes=axes[0], title="Exact solution")
+        )
+        axs.append(self.plot_heatmap_at_axes(X, model_y, axes[1], title=solver.name))
+        axs.append(
+            self.plot_heatmap_at_axes(
+                X, np.abs(model_y - y), axes[2], title="Absolute error"
+            )
+        )
+
+        for needColorbar, ax, axe in zip(colorbar, axs, axes):
+            if needColorbar:
+                fig.colorbar(ax, ax=axe)
+        plt.show()
+        return fig, axes
+
+
 class Klein_Gordon(PDECases):
     def __init__(
         self,
@@ -1783,6 +1821,7 @@ class Klein_Gordon(PDECases):
             layer_size=layer_size,
             activation=activation,
             initializer=initializer,
+            metrics=["l2 relative error"],
         )
 
     def gen_pde(self):
@@ -1884,18 +1923,255 @@ class Klein_Gordon(PDECases):
         return fig, axes
 
 
-class Diffusion_reaction(PDECases):
+class Beltrami_flow(PDECases):
     def __init__(
         self,
-        NumDomain=320,
-        layer_size=[2] + [30] * 6 + [1],
+        NumDomain=50000,
+        layer_size=[4] + [50] * 4 + [4],
         activation="tanh",
-        initializer="Glorot uniform",
+        initializer="Glorot normal",
+    ):
+        self.a = 1
+        self.d = 1
+        self.Re = 1
+        super().__init__(
+            name="Beltrami flow",
+            NumDomain=NumDomain,
+            use_output_transform=False,
+            layer_size=layer_size,
+            activation=activation,
+            initializer=initializer,
+        )
+
+    def gen_pde(self):
+        def pde(x, u):
+            u_vel, v_vel, w_vel, p = u[:, 0:1], u[:, 1:2], u[:, 2:3], u[:, 3:4]
+            u_vel_x = dde.grad.jacobian(u, x, i=0, j=0)
+            u_vel_y = dde.grad.jacobian(u, x, i=0, j=1)
+            u_vel_z = dde.grad.jacobian(u, x, i=0, j=2)
+            u_vel_t = dde.grad.jacobian(u, x, i=0, j=3)
+            u_vel_xx = dde.grad.hessian(u, x, component=0, i=0, j=0)
+            u_vel_yy = dde.grad.hessian(u, x, component=0, i=1, j=1)
+            u_vel_zz = dde.grad.hessian(u, x, component=0, i=2, j=2)
+
+            v_vel_x = dde.grad.jacobian(u, x, i=1, j=0)
+            v_vel_y = dde.grad.jacobian(u, x, i=1, j=1)
+            v_vel_z = dde.grad.jacobian(u, x, i=1, j=2)
+            v_vel_t = dde.grad.jacobian(u, x, i=1, j=3)
+            v_vel_xx = dde.grad.hessian(u, x, component=1, i=0, j=0)
+            v_vel_yy = dde.grad.hessian(u, x, component=1, i=1, j=1)
+            v_vel_zz = dde.grad.hessian(u, x, component=1, i=2, j=2)
+
+            w_vel_x = dde.grad.jacobian(u, x, i=2, j=0)
+            w_vel_y = dde.grad.jacobian(u, x, i=2, j=1)
+            w_vel_z = dde.grad.jacobian(u, x, i=2, j=2)
+            w_vel_t = dde.grad.jacobian(u, x, i=2, j=3)
+            w_vel_xx = dde.grad.hessian(u, x, component=2, i=0, j=0)
+            w_vel_yy = dde.grad.hessian(u, x, component=2, i=1, j=1)
+            w_vel_zz = dde.grad.hessian(u, x, component=2, i=2, j=2)
+
+            p_x = dde.grad.jacobian(u, x, i=3, j=0)
+            p_y = dde.grad.jacobian(u, x, i=3, j=1)
+            p_z = dde.grad.jacobian(u, x, i=3, j=2)
+
+            momentum_x = (
+                u_vel_t
+                + (u_vel * u_vel_x + v_vel * u_vel_y + w_vel * u_vel_z)
+                + p_x
+                - 1 / self.Re * (u_vel_xx + u_vel_yy + u_vel_zz)
+            )
+            momentum_y = (
+                v_vel_t
+                + (u_vel * v_vel_x + v_vel * v_vel_y + w_vel * v_vel_z)
+                + p_y
+                - 1 / self.Re * (v_vel_xx + v_vel_yy + v_vel_zz)
+            )
+            momentum_z = (
+                w_vel_t
+                + (u_vel * w_vel_x + v_vel * w_vel_y + w_vel * w_vel_z)
+                + p_z
+                - 1 / self.Re * (w_vel_xx + w_vel_yy + w_vel_zz)
+            )
+            continuity = u_vel_x + v_vel_y + w_vel_z
+            return [momentum_x, momentum_y, momentum_z, continuity]
+
+        return pde
+
+    def gen_geomtime(self):
+        spatial_domain = dde.geometry.Cuboid(xmin=[-1, -1, -1], xmax=[1, 1, 1])
+        temporal_domain = dde.geometry.TimeDomain(0, 1)
+        return dde.geometry.GeometryXTime(spatial_domain, temporal_domain)
+
+    def u_func(self, x):
+        return (
+            -self.a
+            * (
+                np.exp(self.a * x[:, 0:1])
+                * np.sin(self.a * x[:, 1:2] + self.d * x[:, 2:3])
+                + np.exp(self.a * x[:, 2:3])
+                * np.cos(self.a * x[:, 0:1] + self.d * x[:, 1:2])
+            )
+            * np.exp(-(self.d**2) * x[:, 3:4])
+        )
+
+    def v_func(self, x):
+        return (
+            -self.a
+            * (
+                np.exp(self.a * x[:, 1:2])
+                * np.sin(self.a * x[:, 2:3] + self.d * x[:, 0:1])
+                + np.exp(self.a * x[:, 0:1])
+                * np.cos(self.a * x[:, 1:2] + self.d * x[:, 2:3])
+            )
+            * np.exp(-(self.d**2) * x[:, 3:4])
+        )
+
+    def w_func(self, x):
+        return (
+            -self.a
+            * (
+                np.exp(self.a * x[:, 2:3])
+                * np.sin(self.a * x[:, 0:1] + self.d * x[:, 1:2])
+                + np.exp(self.a * x[:, 1:2])
+                * np.cos(self.a * x[:, 2:3] + self.d * x[:, 0:1])
+            )
+            * np.exp(-(self.d**2) * x[:, 3:4])
+        )
+
+    def p_func(self, x):
+        return (
+            -0.5
+            * self.a**2
+            * (
+                np.exp(2 * self.a * x[:, 0:1])
+                + np.exp(2 * self.a * x[:, 1:2])
+                + np.exp(2 * self.a * x[:, 2:3])
+                + 2
+                * np.sin(self.a * x[:, 0:1] + self.d * x[:, 1:2])
+                * np.cos(self.a * x[:, 2:3] + self.d * x[:, 0:1])
+                * np.exp(self.a * (x[:, 1:2] + x[:, 2:3]))
+                + 2
+                * np.sin(self.a * x[:, 1:2] + self.d * x[:, 2:3])
+                * np.cos(self.a * x[:, 0:1] + self.d * x[:, 1:2])
+                * np.exp(self.a * (x[:, 2:3] + x[:, 0:1]))
+                + 2
+                * np.sin(self.a * x[:, 2:3] + self.d * x[:, 0:1])
+                * np.cos(self.a * x[:, 1:2] + self.d * x[:, 2:3])
+                * np.exp(self.a * (x[:, 0:1] + x[:, 1:2]))
+            )
+            * np.exp(-2 * self.d**2 * x[:, 3:4])
+        )
+
+    def sol(self, x):
+        return np.concatenate(
+            (
+                self.u_func(x),
+                self.v_func(x),
+                self.w_func(x),
+                self.p_func(x),
+            ),
+            axis=1,
+        )
+
+    def gen_data(self):
+        bc_u = dde.icbc.DirichletBC(
+            self.geomtime, self.u_func, lambda _, on_boundary: on_boundary, component=0
+        )
+        bc_v = dde.icbc.DirichletBC(
+            self.geomtime, self.v_func, lambda _, on_boundary: on_boundary, component=1
+        )
+        bc_w = dde.icbc.DirichletBC(
+            self.geomtime, self.w_func, lambda _, on_boundary: on_boundary, component=2
+        )
+
+        ic_u = dde.icbc.IC(
+            self.geomtime, self.u_func, lambda _, on_initial: on_initial, component=0
+        )
+        ic_v = dde.icbc.IC(
+            self.geomtime, self.v_func, lambda _, on_initial: on_initial, component=1
+        )
+        ic_w = dde.icbc.IC(
+            self.geomtime, self.w_func, lambda _, on_initial: on_initial, component=2
+        )
+        return dde.data.TimePDE(
+            self.geomtime,
+            self.pde,
+            [bc_u, bc_v, bc_w, ic_u, ic_v, ic_w],
+            num_domain=self.NumDomain,
+            num_boundary=5000,
+            num_initial=5000,
+            num_test=10000,
+        )
+
+    def set_axes(self, axes):
+        axes.set_xlim(0, 1)
+        axes.set_ylim(-1, 1)
+        axes.set_xlabel("t")
+        axes.set_ylabel("x")
+
+    def plot_data(self, X, axes=None):
+        from matplotlib import pyplot as plt
+
+        if axes is None:
+            fig, axes = plt.subplots()
+        self.set_axes(axes)
+        axes.scatter(X[:, -1], X[:, 2])
+        return axes
+
+    def plot_heatmap_at_axes(self, X, y, axes, title):
+        axes.set_title(title)
+        self.set_axes(axes)
+        return axes.pcolormesh(
+            X[:, -1].reshape(1000, 1000),
+            X[:, 2].reshape(1000, 1000),
+            y.reshape(1000, 1000),
+            cmap="rainbow",
+        )
+
+    def plot_result(self, solver, colorbar=[0, 0, 0]):
+        from matplotlib import pyplot as plt
+
+        X = np.array(
+            [
+                [0, 0, x, t]
+                for x in np.linspace(-1, 1, 1000)
+                for t in np.linspace(0, 1, 1000)
+            ]
+        )
+        y = self.sol(X)[:, 0]
+        model_y = solver.model.predict(X)[:, 0]
+
+        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+        axs = []
+        axs.append(
+            self.plot_heatmap_at_axes(X, y, axes=axes[0], title="Exact solution")
+        )
+        axs.append(self.plot_heatmap_at_axes(X, model_y, axes[1], title=solver.name))
+        axs.append(
+            self.plot_heatmap_at_axes(
+                X, np.abs(model_y - y), axes[2], title="Absolute error"
+            )
+        )
+
+        for needColorbar, ax, axe in zip(colorbar, axs, axes):
+            if needColorbar:
+                fig.colorbar(ax, ax=axe)
+        plt.show()
+        return fig, axes
+
+
+class Schrodinger(PDECases):
+    def __init__(
+        self,
+        NumDomain=10000,
+        layer_size=[2] + [100] * 4 + [2],
+        activation="tanh",
+        initializer="Glorot normal",
     ):
         super().__init__(
-            name="Diffusion-reaction equation",
+            name="Schrodinger equation",
             NumDomain=NumDomain,
-            use_output_transform=True,
+            use_output_transform=False,
             layer_size=layer_size,
             activation=activation,
             initializer=initializer,
@@ -1903,60 +2179,100 @@ class Diffusion_reaction(PDECases):
 
     def gen_pde(self):
         def pde(x, y):
-            dy_t = dde.grad.jacobian(y, x, i=0, j=1)
-            dy_xx = dde.grad.hessian(y, x, i=0, j=0)
-            d = 1
-            return (
-                dy_t
-                - d * dy_xx
-                - bkd.exp(-x[:, 1:])
-                * (
-                    3 * bkd.sin(2 * x[:, 0:1]) / 2
-                    + 8 * bkd.sin(3 * x[:, 0:1]) / 3
-                    + 15 * bkd.sin(4 * x[:, 0:1]) / 4
-                    + 63 * bkd.sin(8 * x[:, 0:1]) / 8
-                )
-            )
+            u = y[:, 0:1]
+            v = y[:, 1:2]
+
+            u_t = dde.grad.jacobian(y, x, i=0, j=1)
+            v_t = dde.grad.jacobian(y, x, i=1, j=1)
+
+            u_xx = dde.grad.hessian(y, x, component=0, i=0, j=0)
+            v_xx = dde.grad.hessian(y, x, component=1, i=0, j=0)
+
+            f_u = u_t + 0.5 * v_xx + (u**2 + v**2) * v
+            f_v = v_t - 0.5 * u_xx - (u**2 + v**2) * u
+
+            return [f_u, f_v]
 
         return pde
 
-    def sol(self, x):
-        return np.exp(-x[:, 1:]) * (
-            np.sin(x[:, 0:1])
-            + np.sin(2 * x[:, 0:1]) / 2
-            + np.sin(3 * x[:, 0:1]) / 3
-            + np.sin(4 * x[:, 0:1]) / 4
-            + np.sin(8 * x[:, 0:1]) / 8
-        )
+    def gen_testdata(self):
+        import os
+        from scipy.io import loadmat
+
+        basepath = os.path.abspath(__file__)
+        folder = os.path.dirname(os.path.dirname(basepath))
+        data_path = os.path.join(folder, "data/NLS.mat")
+        data = loadmat(data_path)
+        t = data["tt"]
+        x = data["x"]
+        u = data["uu"]
+        dt = dx = 0.01
+        xx, tt = np.meshgrid(x, t)
+        X = np.vstack((np.ravel(xx), np.ravel(tt))).T
+        y = u.T.flatten()[:, None]
+        y = np.hstack((y.real, y.imag))
+        return X, y
 
     def gen_geomtime(self):
-        geom = dde.geometry.Interval(-1, 1)
-        timedomain = dde.geometry.TimeDomain(0, 0.99)
+        geom = dde.geometry.Interval(-5, 5)
+        timedomain = dde.geometry.TimeDomain(0, np.pi / 2)
         return dde.geometry.GeometryXTime(geom, timedomain)
 
-    def output_transform(self, x, y):
-        return (
-            x[:, 1:2] * (np.pi**2 - x[:, 0:1] ** 2) * y
-            + bkd.sin(x[:, 0:1])
-            + bkd.sin(2 * x[:, 0:1]) / 2
-            + bkd.sin(3 * x[:, 0:1]) / 3
-            + bkd.sin(4 * x[:, 0:1]) / 4
-            + bkd.sin(8 * x[:, 0:1]) / 8
+    def gen_data(self):
+        bc_u_0 = dde.icbc.PeriodicBC(
+            self.geomtime,
+            0,
+            lambda _, on_boundary: on_boundary,
+            derivative_order=0,
+            component=0,
+        )
+        bc_u_1 = dde.icbc.PeriodicBC(
+            self.geomtime,
+            0,
+            lambda _, on_boundary: on_boundary,
+            derivative_order=1,
+            component=0,
+        )
+        bc_v_0 = dde.icbc.PeriodicBC(
+            self.geomtime,
+            0,
+            lambda _, on_boundary: on_boundary,
+            derivative_order=0,
+            component=1,
+        )
+        bc_v_1 = dde.icbc.PeriodicBC(
+            self.geomtime,
+            0,
+            lambda _, on_boundary: on_boundary,
+            derivative_order=1,
+            component=1,
         )
 
-    def gen_data(self):
+        def init_cond_u(x):
+            return 2 / np.cosh(x[:, 0:1])
+
+        def init_cond_v(x):
+            return 0
+
+        ic_u = dde.icbc.IC(
+            self.geomtime, init_cond_u, lambda _, on_initial: on_initial, component=0
+        )
+        ic_v = dde.icbc.IC(
+            self.geomtime, init_cond_v, lambda _, on_initial: on_initial, component=1
+        )
         return dde.data.TimePDE(
             self.geomtime,
             self.pde,
-            [],
-            num_domain=self.NumDomain,
-            num_test=80000,
-            solution=self.sol,
+            [bc_u_0, bc_u_1, bc_v_0, bc_v_1, ic_u, ic_v],
+            self.NumDomain,
+            num_boundary=20,
+            num_initial=200,
+            train_distribution="pseudo",
         )
 
     def set_axes(self, axes):
-        axes.set_xlim(0, 0.99)
-        axes.set_ylim(-1, 1)
+        axes.set_xlim(0, np.pi / 2)
+        axes.set_ylim(-5, 5)
         axes.set_xlabel("t")
         axes.set_ylabel("x")
 
@@ -1973,24 +2289,20 @@ class Diffusion_reaction(PDECases):
         axes.set_title(title)
         self.set_axes(axes)
         return axes.pcolormesh(
-            X[:, 1].reshape(1000, 1000),
-            X[:, 0].reshape(1000, 1000),
-            y.reshape(1000, 1000),
+            X[:, 1].reshape(201, 256),
+            X[:, 0].reshape(201, 256),
+            y.reshape(201, 256),
             cmap="rainbow",
         )
 
     def plot_result(self, solver, colorbar=[0, 0, 0]):
         from matplotlib import pyplot as plt
 
-        X = np.array(
-            [
-                [x, t]
-                for x in np.linspace(-1, 1, 1000)
-                for t in np.linspace(0, 0.99, 1000)
-            ]
-        )
-        y = self.sol(X)
+        X, y = self.gen_testdata()
         model_y = solver.model.predict(X)
+
+        y = y[:, 0]
+        model_y = model_y[:, 0]
 
         fig, axes = plt.subplots(1, 3, figsize=(15, 5))
         axs = []
@@ -2662,401 +2974,111 @@ class Fractional_Diffusion_1D(PDECases):
         return fig, axes
 
 
-class Beltrami_flow(PDECases):
+class Diffusion_Reaction_Inverse(PDECases):
     def __init__(
         self,
-        NumDomain=50000,
-        layer_size=[4] + [50] * 4 + [4],
+        NumDomain=2000,
+        use_output_transform=False,
+        layer_size=[1, [20, 20], [20, 20], [20, 20], 2],
         activation="tanh",
-        initializer="Glorot normal",
+        initializer="Glorot uniform",
     ):
-        self.a = 1
-        self.d = 1
-        self.Re = 1
+        self.res = self.gen_res()
+        self.metrics = self.gen_metrics()
         super().__init__(
-            name="Beltrami flow",
+            name="Diffusion_Reaction_Inverse",
             NumDomain=NumDomain,
-            use_output_transform=False,
+            use_output_transform=use_output_transform,
             layer_size=layer_size,
             activation=activation,
             initializer=initializer,
-        )
-
-    def gen_pde(self):
-        def pde(x, u):
-            u_vel, v_vel, w_vel, p = u[:, 0:1], u[:, 1:2], u[:, 2:3], u[:, 3:4]
-            u_vel_x = dde.grad.jacobian(u, x, i=0, j=0)
-            u_vel_y = dde.grad.jacobian(u, x, i=0, j=1)
-            u_vel_z = dde.grad.jacobian(u, x, i=0, j=2)
-            u_vel_t = dde.grad.jacobian(u, x, i=0, j=3)
-            u_vel_xx = dde.grad.hessian(u, x, component=0, i=0, j=0)
-            u_vel_yy = dde.grad.hessian(u, x, component=0, i=1, j=1)
-            u_vel_zz = dde.grad.hessian(u, x, component=0, i=2, j=2)
-
-            v_vel_x = dde.grad.jacobian(u, x, i=1, j=0)
-            v_vel_y = dde.grad.jacobian(u, x, i=1, j=1)
-            v_vel_z = dde.grad.jacobian(u, x, i=1, j=2)
-            v_vel_t = dde.grad.jacobian(u, x, i=1, j=3)
-            v_vel_xx = dde.grad.hessian(u, x, component=1, i=0, j=0)
-            v_vel_yy = dde.grad.hessian(u, x, component=1, i=1, j=1)
-            v_vel_zz = dde.grad.hessian(u, x, component=1, i=2, j=2)
-
-            w_vel_x = dde.grad.jacobian(u, x, i=2, j=0)
-            w_vel_y = dde.grad.jacobian(u, x, i=2, j=1)
-            w_vel_z = dde.grad.jacobian(u, x, i=2, j=2)
-            w_vel_t = dde.grad.jacobian(u, x, i=2, j=3)
-            w_vel_xx = dde.grad.hessian(u, x, component=2, i=0, j=0)
-            w_vel_yy = dde.grad.hessian(u, x, component=2, i=1, j=1)
-            w_vel_zz = dde.grad.hessian(u, x, component=2, i=2, j=2)
-
-            p_x = dde.grad.jacobian(u, x, i=3, j=0)
-            p_y = dde.grad.jacobian(u, x, i=3, j=1)
-            p_z = dde.grad.jacobian(u, x, i=3, j=2)
-
-            momentum_x = (
-                u_vel_t
-                + (u_vel * u_vel_x + v_vel * u_vel_y + w_vel * u_vel_z)
-                + p_x
-                - 1 / self.Re * (u_vel_xx + u_vel_yy + u_vel_zz)
-            )
-            momentum_y = (
-                v_vel_t
-                + (u_vel * v_vel_x + v_vel * v_vel_y + w_vel * v_vel_z)
-                + p_y
-                - 1 / self.Re * (v_vel_xx + v_vel_yy + v_vel_zz)
-            )
-            momentum_z = (
-                w_vel_t
-                + (u_vel * w_vel_x + v_vel * w_vel_y + w_vel * w_vel_z)
-                + p_z
-                - 1 / self.Re * (w_vel_xx + w_vel_yy + w_vel_zz)
-            )
-            continuity = u_vel_x + v_vel_y + w_vel_z
-            return [momentum_x, momentum_y, momentum_z, continuity]
-
-        return pde
-
-    def gen_geomtime(self):
-        spatial_domain = dde.geometry.Cuboid(xmin=[-1, -1, -1], xmax=[1, 1, 1])
-        temporal_domain = dde.geometry.TimeDomain(0, 1)
-        return dde.geometry.GeometryXTime(spatial_domain, temporal_domain)
-
-    def u_func(self, x):
-        return (
-            -self.a
-            * (
-                np.exp(self.a * x[:, 0:1])
-                * np.sin(self.a * x[:, 1:2] + self.d * x[:, 2:3])
-                + np.exp(self.a * x[:, 2:3])
-                * np.cos(self.a * x[:, 0:1] + self.d * x[:, 1:2])
-            )
-            * np.exp(-(self.d**2) * x[:, 3:4])
-        )
-
-    def v_func(self, x):
-        return (
-            -self.a
-            * (
-                np.exp(self.a * x[:, 1:2])
-                * np.sin(self.a * x[:, 2:3] + self.d * x[:, 0:1])
-                + np.exp(self.a * x[:, 0:1])
-                * np.cos(self.a * x[:, 1:2] + self.d * x[:, 2:3])
-            )
-            * np.exp(-(self.d**2) * x[:, 3:4])
-        )
-
-    def w_func(self, x):
-        return (
-            -self.a
-            * (
-                np.exp(self.a * x[:, 2:3])
-                * np.sin(self.a * x[:, 0:1] + self.d * x[:, 1:2])
-                + np.exp(self.a * x[:, 1:2])
-                * np.cos(self.a * x[:, 2:3] + self.d * x[:, 0:1])
-            )
-            * np.exp(-(self.d**2) * x[:, 3:4])
-        )
-
-    def p_func(self, x):
-        return (
-            -0.5
-            * self.a**2
-            * (
-                np.exp(2 * self.a * x[:, 0:1])
-                + np.exp(2 * self.a * x[:, 1:2])
-                + np.exp(2 * self.a * x[:, 2:3])
-                + 2
-                * np.sin(self.a * x[:, 0:1] + self.d * x[:, 1:2])
-                * np.cos(self.a * x[:, 2:3] + self.d * x[:, 0:1])
-                * np.exp(self.a * (x[:, 1:2] + x[:, 2:3]))
-                + 2
-                * np.sin(self.a * x[:, 1:2] + self.d * x[:, 2:3])
-                * np.cos(self.a * x[:, 0:1] + self.d * x[:, 1:2])
-                * np.exp(self.a * (x[:, 2:3] + x[:, 0:1]))
-                + 2
-                * np.sin(self.a * x[:, 2:3] + self.d * x[:, 0:1])
-                * np.cos(self.a * x[:, 1:2] + self.d * x[:, 2:3])
-                * np.exp(self.a * (x[:, 0:1] + x[:, 1:2]))
-            )
-            * np.exp(-2 * self.d**2 * x[:, 3:4])
         )
 
     def sol(self, x):
-        return np.concatenate(
-            (
-                self.u_func(x),
-                self.v_func(x),
-                self.w_func(x),
-                self.p_func(x),
-            ),
-            axis=1,
-        )
+        return self.res.sol(x)[0]
 
-    def gen_data(self):
-        bc_u = dde.icbc.DirichletBC(
-            self.geomtime, self.u_func, lambda _, on_boundary: on_boundary, component=0
-        )
-        bc_v = dde.icbc.DirichletBC(
-            self.geomtime, self.v_func, lambda _, on_boundary: on_boundary, component=1
-        )
-        bc_w = dde.icbc.DirichletBC(
-            self.geomtime, self.w_func, lambda _, on_boundary: on_boundary, component=2
-        )
+    def gen_res(self):
+        from scipy.integrate import solve_bvp
 
-        ic_u = dde.icbc.IC(
-            self.geomtime, self.u_func, lambda _, on_initial: on_initial, component=0
-        )
-        ic_v = dde.icbc.IC(
-            self.geomtime, self.v_func, lambda _, on_initial: on_initial, component=1
-        )
-        ic_w = dde.icbc.IC(
-            self.geomtime, self.w_func, lambda _, on_initial: on_initial, component=2
-        )
-        return dde.data.TimePDE(
-            self.geomtime,
-            self.pde,
-            [bc_u, bc_v, bc_w, ic_u, ic_v, ic_w],
-            num_domain=self.NumDomain,
-            num_boundary=5000,
-            num_initial=5000,
-            num_test=10000,
-        )
+        def k(x):
+            return 0.1 + np.exp(-0.5 * (x - 0.5) ** 2 / 0.15**2)
 
-    def set_axes(self, axes):
-        axes.set_xlim(0, 1)
-        axes.set_ylim(-1, 1)
-        axes.set_xlabel("t")
-        axes.set_ylabel("x")
+        def fun(x, y):
+            return np.vstack((y[1], 100 * (k(x) * y[0] + np.sin(2 * np.pi * x))))
 
-    def plot_data(self, X, axes=None):
-        from matplotlib import pyplot as plt
+        def bc(ya, yb):
+            return np.array([ya[0], yb[0]])
 
-        if axes is None:
-            fig, axes = plt.subplots()
-        self.set_axes(axes)
-        axes.scatter(X[:, -1], X[:, 2])
-        return axes
+        a = np.linspace(0, 1, 1000)
+        b = np.zeros((2, a.size))
 
-    def plot_heatmap_at_axes(self, X, y, axes, title):
-        axes.set_title(title)
-        self.set_axes(axes)
-        return axes.pcolormesh(
-            X[:, -1].reshape(1000, 1000),
-            X[:, 2].reshape(1000, 1000),
-            y.reshape(1000, 1000),
-            cmap="rainbow",
-        )
+        res = solve_bvp(fun, bc, a, b)
+        return res
 
-    def plot_result(self, solver, colorbar=[0, 0, 0]):
-        from matplotlib import pyplot as plt
+    def get_metrics(self, model):
+        xx = np.linspace(0, 1, 1001)[:, None]
 
-        X = np.array(
-            [
-                [0, 0, x, t]
-                for x in np.linspace(-1, 1, 1000)
-                for t in np.linspace(0, 1, 1000)
-            ]
-        )
-        y = self.sol(X)[:, 0]
-        model_y = solver.model.predict(X)[:, 0]
+        def k(x):
+            return 0.1 + np.exp(-0.5 * (x - 0.5) ** 2 / 0.15**2)
 
-        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-        axs = []
-        axs.append(
-            self.plot_heatmap_at_axes(X, y, axes=axes[0], title="Exact solution")
-        )
-        axs.append(self.plot_heatmap_at_axes(X, model_y, axes[1], title=solver.name))
-        axs.append(
-            self.plot_heatmap_at_axes(
-                X, np.abs(model_y - y), axes[2], title="Absolute error"
+        def l2_u(_, __):
+            return dde.metrics.l2_relative_error(
+                self.sol(xx), model.predict(xx)[:, 0:1]
             )
-        )
 
-        for needColorbar, ax, axe in zip(colorbar, axs, axes):
-            if needColorbar:
-                fig.colorbar(ax, ax=axe)
-        plt.show()
-        return fig, axes
+        def l2_k(_, __):
+            return dde.metrics.l2_relative_error(k(xx), model.predict(xx)[:, 1:2])
 
-
-class Schrodinger(PDECases):
-    def __init__(
-        self,
-        NumDomain=10000,
-        layer_size=[2] + [100] * 4 + [2],
-        activation="tanh",
-        initializer="Glorot normal",
-    ):
-        super().__init__(
-            name="Schrodinger equation",
-            NumDomain=NumDomain,
-            use_output_transform=False,
-            layer_size=layer_size,
-            activation=activation,
-            initializer=initializer,
-        )
+        return [l2_u, l2_k]
 
     def gen_pde(self):
         def pde(x, y):
             u = y[:, 0:1]
-            v = y[:, 1:2]
-
-            u_t = dde.grad.jacobian(y, x, i=0, j=1)
-            v_t = dde.grad.jacobian(y, x, i=1, j=1)
-
-            u_xx = dde.grad.hessian(y, x, component=0, i=0, j=0)
-            v_xx = dde.grad.hessian(y, x, component=1, i=0, j=0)
-
-            f_u = u_t + 0.5 * v_xx + (u**2 + v**2) * v
-            f_v = v_t - 0.5 * u_xx - (u**2 + v**2) * u
-
-            return [f_u, f_v]
+            k = y[:, 1:2]
+            du_xx = dde.grad.hessian(y, x, component=0)
+            return 0.01 * du_xx - k * u - bkd.sin(2 * np.pi * x)
 
         return pde
 
-    def gen_testdata(self):
-        import os
-        from scipy.io import loadmat
-
-        basepath = os.path.abspath(__file__)
-        folder = os.path.dirname(os.path.dirname(basepath))
-        data_path = os.path.join(folder, "data/NLS.mat")
-        data = loadmat(data_path)
-        t = data["tt"]
-        x = data["x"]
-        u = data["uu"]
-        dt = dx = 0.01
-        xx, tt = np.meshgrid(x, t)
-        X = np.vstack((np.ravel(xx), np.ravel(tt))).T
-        y = u.T.flatten()[:, None]
-        y = np.hstack((y.real, y.imag))
-        return X, y
+    def gen_net(self, layer_size, activation, initializer):
+        return dde.nn.PFNN(layer_size, activation, initializer)
 
     def gen_geomtime(self):
-        geom = dde.geometry.Interval(-5, 5)
-        timedomain = dde.geometry.TimeDomain(0, np.pi / 2)
-        return dde.geometry.GeometryXTime(geom, timedomain)
+        return dde.geometry.Interval(0, 1)
 
     def gen_data(self):
-        bc_u_0 = dde.icbc.PeriodicBC(
-            self.geomtime,
-            0,
-            lambda _, on_boundary: on_boundary,
-            derivative_order=0,
-            component=0,
-        )
-        bc_u_1 = dde.icbc.PeriodicBC(
-            self.geomtime,
-            0,
-            lambda _, on_boundary: on_boundary,
-            derivative_order=1,
-            component=0,
-        )
-        bc_v_0 = dde.icbc.PeriodicBC(
-            self.geomtime,
-            0,
-            lambda _, on_boundary: on_boundary,
-            derivative_order=0,
-            component=1,
-        )
-        bc_v_1 = dde.icbc.PeriodicBC(
-            self.geomtime,
-            0,
-            lambda _, on_boundary: on_boundary,
-            derivative_order=1,
-            component=1,
-        )
+        def gen_traindata(num):
+            xvals = np.linspace(0, 1, num)
+            yvals = self.sol(xvals)
 
-        def init_cond_u(x):
-            return 2 / np.cosh(x[:, 0:1])
+            return np.reshape(xvals, (-1, 1)), np.reshape(yvals, (-1, 1))
 
-        def init_cond_v(x):
-            return 0
-
-        ic_u = dde.icbc.IC(
-            self.geomtime, init_cond_u, lambda _, on_initial: on_initial, component=0
+        ob_x, ob_u = gen_traindata(8)
+        observe_u = dde.PointSetBC(ob_x, ob_u, component=0)
+        bc = dde.DirichletBC(
+            self.geomtime, self.sol, lambda _, on_boundary: on_boundary, component=0
         )
-        ic_v = dde.icbc.IC(
-            self.geomtime, init_cond_v, lambda _, on_initial: on_initial, component=1
-        )
-        return dde.data.TimePDE(
+        return dde.data.PDE(
             self.geomtime,
             self.pde,
-            [bc_u_0, bc_u_1, bc_v_0, bc_v_1, ic_u, ic_v],
-            self.NumDomain,
-            num_boundary=20,
-            num_initial=200,
+            bcs=[bc, observe_u],
+            num_domain=self.NumDomain - 2,
+            num_boundary=2,
             train_distribution="pseudo",
+            num_test=1000,
         )
 
-    def set_axes(self, axes):
-        axes.set_xlim(0, np.pi / 2)
-        axes.set_ylim(-5, 5)
-        axes.set_xlabel("t")
-        axes.set_ylabel("x")
-
-    def plot_data(self, X, axes=None):
-        from matplotlib import pyplot as plt
-
-        if axes is None:
-            fig, axes = plt.subplots()
-        self.set_axes(axes)
-        axes.scatter(X[:, 1], X[:, 0])
-        return axes
-
-    def plot_heatmap_at_axes(self, X, y, axes, title):
-        axes.set_title(title)
-        self.set_axes(axes)
-        return axes.pcolormesh(
-            X[:, 1].reshape(201, 256),
-            X[:, 0].reshape(201, 256),
-            y.reshape(201, 256),
-            cmap="rainbow",
-        )
-
-    def plot_result(self, solver, colorbar=[0, 0, 0]):
+    def plot_result(self, solver, axes=None, exact=True):
         from matplotlib import pyplot as plt
 
         X, y = self.gen_testdata()
-        model_y = solver.model.predict(X)
-
-        y = y[:, 0]
-        model_y = model_y[:, 0]
-
-        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-        axs = []
-        axs.append(
-            self.plot_heatmap_at_axes(X, y, axes=axes[0], title="Exact solution")
-        )
-        axs.append(self.plot_heatmap_at_axes(X, model_y, axes[1], title=solver.name))
-        axs.append(
-            self.plot_heatmap_at_axes(
-                X, np.abs(model_y - y), axes[2], title="Absolute error"
-            )
-        )
-
-        for needColorbar, ax, axe in zip(colorbar, axs, axes):
-            if needColorbar:
-                fig.colorbar(ax, ax=axe)
-        plt.show()
+        if axes is None:
+            fig, axes = plt.subplots()
+        if exact:
+            axes.plot(X, y, label="Exact")
+        axes.plot(X, solver.model.predict(X), "--", label="Prediction")
+        axes.legend()
+        axes.set_xlabel("x")
+        axes.set_ylabel("y")
+        axes.set_title(self.name)
         return fig, axes

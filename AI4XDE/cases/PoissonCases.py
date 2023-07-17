@@ -15,6 +15,9 @@ class PoissonCase1D(PDECases):
         layer_size=[2] + [32] * 3 + [1],
         activation="tanh",
         initializer="Glorot uniform",
+        metrics=["l2 relative error"],
+        loss_weights=None,
+        external_trainable_variables=None,
     ):
         self.Interval = Interval
         super().__init__(
@@ -24,6 +27,9 @@ class PoissonCase1D(PDECases):
             layer_size=layer_size,
             activation=activation,
             initializer=initializer,
+            metrics=metrics,
+            loss_weights=loss_weights,
+            external_trainable_variables=external_trainable_variables,
         )
 
     @abstractmethod
@@ -343,6 +349,31 @@ class Poisson_1D_Fourier_Net(PoissonCase1D):
             initializer=initializer,
         )
 
+    def gen_compile(
+        self,
+        metrics=None,
+        loss_weights=None,
+        external_trainable_variables=None,
+    ):
+        def compile(
+            model,
+            optimizer,
+            lr=None,
+            loss="MSE",
+            decay=("inverse time", 2000, 0.9),
+        ):
+            model.compile(
+                optimizer,
+                lr,
+                loss,
+                metrics,
+                decay,
+                loss_weights,
+                external_trainable_variables,
+            )
+
+        return compile
+
     def func(self, x):
         result = -((np.pi * self.A) ** 2) * bkd.sin(np.pi * self.A * x) - 0.1 * (
             np.pi * self.B
@@ -385,6 +416,7 @@ class Poisson_2D_L_Shaped(PDECases):
             layer_size=layer_size,
             activation=activation,
             initializer=initializer,
+            metrics=None,
         )
 
     def gen_data(self):
