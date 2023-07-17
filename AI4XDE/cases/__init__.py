@@ -39,6 +39,8 @@ __all__ = [
     "Fractional_Poisson_2D",
     "Fractional_Poisson_3D",
     "Fractional_Diffusion_1D",
+    "InverseCase",
+    "Lorenz_Inverse",
 ]
 
 from .PDECases import (
@@ -79,3 +81,4 @@ from .PoissonCases import (
     Poisson_2D_L_Shaped,
 )
 from .WaveCases import WaveCase1D, Wave_1D_STMsFFN, Wave_1D_Hard_Boundary
+from .InverseCases import InverseCase, Lorenz_Inverse
