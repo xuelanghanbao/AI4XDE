@@ -15,6 +15,8 @@ class InverseCase(PDECases):
         layer_size=[2] + [32] * 3 + [1],
         activation="tanh",
         initializer="Glorot uniform",
+        metrics=None,
+        loss_weights=None,
     ):
         super().__init__(
             name=name,
@@ -24,6 +26,8 @@ class InverseCase(PDECases):
             activation=activation,
             initializer=initializer,
             external_trainable_variables=external_trainable_variables,
+            metrics=metrics,
+            loss_weights=loss_weights,
         )
 
     @abstractmethod
@@ -109,7 +113,7 @@ class Lorenz_Inverse(InverseCase):
             anchors=observe_t,
         )
 
-    def plot_result(self, solver):
+    def plot_result(self, solver, axes=None, exact=True):
         C1_true = 10
         C2_true = 15
         C3_true = 8 / 3
@@ -125,6 +129,20 @@ class Lorenz_Inverse(InverseCase):
         print(f"C1 true: {C1_true}, C2 true: {C2_true}, C3 true: {C3_true}")
         print(f"C1 pred: {C1_pred}, C2 pred: {C2_pred}, C3 pred: {C3_pred}")
         print(f"C1 error: {C1_error}, C2 error: {C2_error}, C3 error: {C3_error}")
+
+        from matplotlib import pyplot as plt
+
+        X, y = self.gen_testdata()
+        if axes is None:
+            fig, axes = plt.subplots()
+        if exact:
+            axes.plot(X, y, label="Exact")
+        axes.plot(X, solver.model.predict(X), "--", label="Prediction")
+        axes.legend()
+        axes.set_xlabel("t")
+        axes.set_ylabel("y")
+        axes.set_title(self.name)
+        return fig, axes
 
 
 class Lorenz_Exogenous_Input_Inverse(InverseCase):
@@ -230,7 +248,7 @@ class Lorenz_Exogenous_Input_Inverse(InverseCase):
             auxiliary_var_function=ex_func2,
         )
 
-    def plot_result(self, solver):
+    def plot_result(self, solver, axes=None, exact=True):
         C1_pred = bkd.to_numpy(self.C1)
         C2_pred = bkd.to_numpy(self.C2)
         C3_pred = bkd.to_numpy(self.C3)
@@ -244,3 +262,106 @@ class Lorenz_Exogenous_Input_Inverse(InverseCase):
         )
         print(f"C1 pred: {C1_pred}, C2 pred: {C2_pred}, C3 pred: {C3_pred}")
         print(f"C1 error: {C1_error}, C2 error: {C2_error}, C3 error: {C3_error}")
+
+        from matplotlib import pyplot as plt
+
+        X, y = self.gen_testdata()
+        if axes is None:
+            fig, axes = plt.subplots()
+        if exact:
+            axes.plot(X, y, label="Exact")
+        axes.plot(X, solver.model.predict(X), "--", label="Prediction")
+        axes.legend()
+        axes.set_xlabel("t")
+        axes.set_ylabel("y")
+        axes.set_title(self.name)
+        return fig, axes
+
+
+class Brinkman_Forchheimer_Inverse(InverseCase):
+    def __init__(
+        self,
+        NumDomain=100,
+        layer_size=[1] + [20] * 3 + [1],
+        activation="tanh",
+        initializer="Glorot uniform",
+    ):
+        self.g = 1
+        self.v = 1e-3
+        self.e = 0.4
+        self.v_e = dde.Variable(0.1)
+        self.K = dde.Variable(0.1)
+        self.v_e_true = 1e-3
+        self.K_true = 1e-3
+        super().__init__(
+            "Inverse problem for Brinkman-Forchheimer model",
+            external_trainable_variables=[self.v_e, self.K],
+            NumDomain=NumDomain,
+            use_output_transform=True,
+            layer_size=layer_size,
+            activation=activation,
+            initializer=initializer,
+            metrics=["l2 relative error"],
+        )
+
+    def sol(self, x):
+        H = 1
+        r = (self.v * self.e / (1e-3 * 1e-3)) ** (0.5)
+        return (
+            self.g * 1e-3 / self.v * (1 - np.cosh(r * (x - H / 2)) / np.cosh(r * H / 2))
+        )
+
+    def gen_pde(self):
+        def pde(x, y):
+            du_xx = dde.grad.hessian(y, x)
+            return -self.v_e / self.e * du_xx + self.v * y / self.K - self.g
+
+        return pde
+
+    def gen_geomtime(self):
+        return dde.geometry.Interval(0, 1)
+
+    def gen_data(self):
+        num = 5
+        xvals = np.linspace(1 / (num + 1), 1, num, endpoint=False)
+        yvals = self.sol(xvals)
+        ob_x, ob_u = np.reshape(xvals, (-1, 1)), np.reshape(yvals, (-1, 1))
+        observe_u = dde.icbc.PointSetBC(ob_x, ob_u, component=0)
+        return dde.data.PDE(
+            self.geomtime,
+            self.pde,
+            [observe_u],
+            num_domain=self.NumDomain,
+            num_boundary=0,
+            num_test=500,
+            solution=self.sol,
+            train_distribution="uniform",
+        )
+
+    def output_transform(self, x, y):
+        return x * (1 - x) * y
+
+    def plot_result(self, solver, axes=None, exact=True):
+        v_e_pred = bkd.to_numpy(self.v_e)
+        K_pred = bkd.to_numpy(self.K)
+
+        v_e_error = np.abs(self.v_e_true - v_e_pred)
+        K_error = np.abs(self.K_true - K_pred)
+
+        print(f"v_e true: {self.v_e_true}, K true: {self.K_true}")
+        print(f"v_e pred: {v_e_pred}, K pred: {K_pred}")
+        print(f"v_e error: {v_e_error}, K error: {K_error}")
+
+        from matplotlib import pyplot as plt
+
+        X, y = self.gen_testdata()
+        if axes is None:
+            fig, axes = plt.subplots()
+        if exact:
+            axes.plot(X, y, label="Exact")
+        axes.plot(X, solver.model.predict(X), "--", label="Prediction")
+        axes.legend()
+        axes.set_xlabel("t")
+        axes.set_ylabel("y")
+        axes.set_title(self.name)
+        return fig, axes
