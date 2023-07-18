@@ -492,3 +492,76 @@ class Poisson_2D_L_Shaped(PDECases):
         self.plot_heatmap_at_axes(X, model_y, axes, title=solver.name)
         plt.show()
         return fig, axes
+
+
+class Poisson_1D_Unknown_Forcing_Field_Inverse(PoissonCase1D):
+    def __init__(
+        self,
+        NumDomain=16,
+        layer_size=[1, [20, 20], [20, 20], [20, 20], 2],
+        activation="tanh",
+        initializer="Glorot uniform",
+    ):
+        self.Interval = [-1, 1]
+        super().__init__(
+            name="Inverse problem for the Poisson equation with unknown forcing field",
+            NumDomain=NumDomain,
+            Interval=self.Interval,
+            use_output_transform=False,
+            layer_size=layer_size,
+            activation=activation,
+            initializer=initializer,
+            loss_weights=[1, 100, 1000],
+            metrics=None,
+        )
+
+    def gen_pde(self):
+        def pde(x, y):
+            u, q = y[:, 0:1], y[:, 1:2]
+            du_xx = dde.grad.hessian(y, x, component=0, i=0, j=0)
+            return -du_xx + q
+
+        return pde
+
+    def func(self, x):
+        return -np.pi**2 * np.sin(np.pi * x)
+
+    def sol(self, x):
+        return np.sin(np.pi * x)
+
+    def gen_data(self):
+        bc = dde.icbc.DirichletBC(
+            self.geomtime, self.sol, lambda _, on_boundary: on_boundary, component=0
+        )
+        num = 100
+        ob_x = np.linspace(-1, 1, num).reshape(num, 1)
+        ob_u = self.sol(ob_x)
+        observe_u = dde.icbc.PointSetBC(ob_x, ob_u, component=0)
+        return dde.data.PDE(
+            self.geomtime,
+            self.pde,
+            [bc, observe_u],
+            self.NumDomain,
+            2,
+            anchors=ob_x,
+            num_test=1000,
+        )
+
+    def gen_net(self, layer_size, activation, initializer):
+        return dde.nn.PFNN(layer_size, activation, initializer)
+
+    def plot_result(self, solver, axes=None, exact=True):
+        from matplotlib import pyplot as plt
+
+        X, y = self.gen_testdata()
+        y = np.hstack([self.func(X), y])
+        if axes is None:
+            fig, axes = plt.subplots()
+        if exact:
+            axes.plot(X, y, label="Exact")
+        axes.plot(X, solver.model.predict(X), "--", label="Prediction")
+        axes.legend()
+        axes.set_xlabel("t")
+        axes.set_ylabel("y")
+        axes.set_title(self.name)
+        return fig, axes
