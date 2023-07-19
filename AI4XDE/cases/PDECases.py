@@ -19,6 +19,7 @@ class PDECases(ABC):
     ):
         self.name = name
         self.NumDomain = NumDomain
+        self.test_data = None
         self.use_output_transform = use_output_transform
         self.net = self.gen_net(layer_size, activation, initializer)
         self.pde = self.gen_pde()
@@ -2977,114 +2978,4 @@ class Fractional_Diffusion_1D(PDECases):
             if needColorbar:
                 fig.colorbar(ax, ax=axe)
         plt.show()
-        return fig, axes
-
-
-class Diffusion_Reaction_Inverse(PDECases):
-    def __init__(
-        self,
-        NumDomain=2000,
-        use_output_transform=False,
-        layer_size=[1, [20, 20], [20, 20], [20, 20], 2],
-        activation="tanh",
-        initializer="Glorot uniform",
-    ):
-        self.res = self.gen_res()
-        self.metrics = self.gen_metrics()
-        super().__init__(
-            name="Diffusion_Reaction_Inverse",
-            NumDomain=NumDomain,
-            use_output_transform=use_output_transform,
-            layer_size=layer_size,
-            activation=activation,
-            initializer=initializer,
-        )
-
-    def sol(self, x):
-        return self.res.sol(x)[0]
-
-    def gen_res(self):
-        from scipy.integrate import solve_bvp
-
-        def k(x):
-            return 0.1 + np.exp(-0.5 * (x - 0.5) ** 2 / 0.15**2)
-
-        def fun(x, y):
-            return np.vstack((y[1], 100 * (k(x) * y[0] + np.sin(2 * np.pi * x))))
-
-        def bc(ya, yb):
-            return np.array([ya[0], yb[0]])
-
-        a = np.linspace(0, 1, 1000)
-        b = np.zeros((2, a.size))
-
-        res = solve_bvp(fun, bc, a, b)
-        return res
-
-    def get_metrics(self, model):
-        xx = np.linspace(0, 1, 1001)[:, None]
-
-        def k(x):
-            return 0.1 + np.exp(-0.5 * (x - 0.5) ** 2 / 0.15**2)
-
-        def l2_u(_, __):
-            return dde.metrics.l2_relative_error(
-                self.sol(xx), model.predict(xx)[:, 0:1]
-            )
-
-        def l2_k(_, __):
-            return dde.metrics.l2_relative_error(k(xx), model.predict(xx)[:, 1:2])
-
-        return [l2_u, l2_k]
-
-    def gen_pde(self):
-        def pde(x, y):
-            u = y[:, 0:1]
-            k = y[:, 1:2]
-            du_xx = dde.grad.hessian(y, x, component=0)
-            return 0.01 * du_xx - k * u - bkd.sin(2 * np.pi * x)
-
-        return pde
-
-    def gen_net(self, layer_size, activation, initializer):
-        return dde.nn.PFNN(layer_size, activation, initializer)
-
-    def gen_geomtime(self):
-        return dde.geometry.Interval(0, 1)
-
-    def gen_data(self):
-        def gen_traindata(num):
-            xvals = np.linspace(0, 1, num)
-            yvals = self.sol(xvals)
-
-            return np.reshape(xvals, (-1, 1)), np.reshape(yvals, (-1, 1))
-
-        ob_x, ob_u = gen_traindata(8)
-        observe_u = dde.PointSetBC(ob_x, ob_u, component=0)
-        bc = dde.DirichletBC(
-            self.geomtime, self.sol, lambda _, on_boundary: on_boundary, component=0
-        )
-        return dde.data.PDE(
-            self.geomtime,
-            self.pde,
-            bcs=[bc, observe_u],
-            num_domain=self.NumDomain - 2,
-            num_boundary=2,
-            train_distribution="pseudo",
-            num_test=1000,
-        )
-
-    def plot_result(self, solver, axes=None, exact=True):
-        from matplotlib import pyplot as plt
-
-        X, y = self.get_testdata()
-        if axes is None:
-            fig, axes = plt.subplots()
-        if exact:
-            axes.plot(X, y, label="Exact")
-        axes.plot(X, solver.model.predict(X), "--", label="Prediction")
-        axes.legend()
-        axes.set_xlabel("x")
-        axes.set_ylabel("y")
-        axes.set_title(self.name)
         return fig, axes
