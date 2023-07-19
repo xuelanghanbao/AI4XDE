@@ -153,7 +153,7 @@ class A_Simple_ODE(PDECases):
     def sol(self, x):
         return np.hstack((np.sin(x), np.cos(x)))
 
-    def plot_result(self, model, axes=None, exact=True):
+    def plot_result(self, solver, axes=None, exact=True):
         from matplotlib import pyplot as plt
 
         xx = np.linspace(-np.pi / 2, np.pi / 2, 1001)[:, None]
@@ -161,7 +161,7 @@ class A_Simple_ODE(PDECases):
             fig, axes = plt.subplots()
         if exact:
             axes.plot(xx, self.sol(xx), label="Exact")
-        axes.plot(xx, model.predict(xx), "--", label="Prediction")
+        axes.plot(xx, solver.model.predict(xx), "--", label="Prediction")
         axes.legend()
         axes.set_xlabel("x")
         axes.set_ylabel("y")
