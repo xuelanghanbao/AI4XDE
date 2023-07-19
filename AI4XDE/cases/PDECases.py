@@ -27,6 +27,7 @@ class PDECases(ABC):
         self.compile = self.gen_compile(
             metrics, loss_weights, external_trainable_variables
         )
+        self.test_data = None
 
     def gen_net(self, layer_size, activation, initializer):
         net = dde.nn.FNN(layer_size, activation, initializer)
@@ -53,6 +54,11 @@ class PDECases(ABC):
             return x, y
         else:
             raise Warning("You must rewrite one of sol() and gen_testdata()")
+
+    def get_testdata(self):
+        if self.test_data is None:
+            self.test_data = self.gen_testdata()
+        return self.test_data
 
     def gen_compile(
         self,
@@ -267,7 +273,7 @@ class LotkaVolterra(PDECases):
     def plot_result(self, solver, axes=None, exact=True):
         from matplotlib import pyplot as plt
 
-        X, y = self.gen_testdata()
+        X, y = self.get_testdata()
         if axes is None:
             fig, axes = plt.subplots()
         if exact:
@@ -338,7 +344,7 @@ class SecondOrderODE(PDECases):
     def plot_result(self, solver, axes=None, exact=True):
         from matplotlib import pyplot as plt
 
-        X, y = self.gen_testdata()
+        X, y = self.get_testdata()
         if axes is None:
             fig, axes = plt.subplots()
         if exact:
@@ -537,7 +543,7 @@ class Euler_Beam(PDECases):
     def plot_result(self, solver, axes=None, exact=True):
         from matplotlib import pyplot as plt
 
-        X, y = self.gen_testdata()
+        X, y = self.get_testdata()
         if axes is None:
             fig, axes = plt.subplots()
         if exact:
@@ -1293,7 +1299,7 @@ class Burgers(PDECases):
     def plot_result(self, solver, colorbar=[0, 0, 0]):
         from matplotlib import pyplot as plt
 
-        X, y = self.gen_testdata()
+        X, y = self.get_testdata()
         model_y = solver.model.predict(X)
 
         fig, axes = plt.subplots(1, 3, figsize=(15, 5))
@@ -1781,7 +1787,7 @@ class AllenCahn(PDECases):
     def plot_result(self, solver, colorbar=[0, 0, 0]):
         from matplotlib import pyplot as plt
 
-        X, y = self.gen_testdata()
+        X, y = self.get_testdata()
         model_y = solver.model.predict(X)
 
         fig, axes = plt.subplots(1, 3, figsize=(15, 5))
@@ -2298,7 +2304,7 @@ class Schrodinger(PDECases):
     def plot_result(self, solver, colorbar=[0, 0, 0]):
         from matplotlib import pyplot as plt
 
-        X, y = self.gen_testdata()
+        X, y = self.get_testdata()
         model_y = solver.model.predict(X)
 
         y = y[:, 0]
@@ -2371,7 +2377,7 @@ class IDE(PDECases):
     def plot_result(self, solver, axes=None, exact=True):
         from matplotlib import pyplot as plt
 
-        X, y = self.gen_testdata()
+        X, y = self.get_testdata()
         if axes is None:
             fig, axes = plt.subplots()
         if exact:
@@ -2438,7 +2444,7 @@ class Volterra_IDE(PDECases):
     def plot_result(self, solver, axes=None, exact=True):
         from matplotlib import pyplot as plt
 
-        X, y = self.gen_testdata()
+        X, y = self.get_testdata()
         if axes is None:
             fig, axes = plt.subplots()
         if exact:
@@ -2527,7 +2533,7 @@ class Fractional_Poisson_1D(PDECases):
     def plot_result(self, solver, axes=None, exact=True):
         from matplotlib import pyplot as plt
 
-        X, y = self.gen_testdata()
+        X, y = self.get_testdata()
         if axes is None:
             fig, axes = plt.subplots()
         if exact:
@@ -3071,7 +3077,7 @@ class Diffusion_Reaction_Inverse(PDECases):
     def plot_result(self, solver, axes=None, exact=True):
         from matplotlib import pyplot as plt
 
-        X, y = self.gen_testdata()
+        X, y = self.get_testdata()
         if axes is None:
             fig, axes = plt.subplots()
         if exact:

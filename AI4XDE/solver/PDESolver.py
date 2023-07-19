@@ -70,7 +70,7 @@ class PINNSolver:
         return fig, axes
 
     def eval(self):
-        X, y = self.PDECase.gen_testdata()
+        X, y = self.PDECase.get_testdata()
         y_pred = self.model.predict(X)
         error = dde.metrics.l2_relative_error(y, y_pred)
         print("L2 relative error:", error)
