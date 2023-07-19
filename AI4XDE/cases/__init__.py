@@ -11,8 +11,8 @@ __all__ = [
     "Poisson_1D_Hard_Boundary",
     "Poisson_1D_Fourier_Net",
     "Poisson_2D_L_Shaped",
+    "Poisson_1D_Unknown_Forcing_Field_Inverse",
     "PDECases",
-    "Diffusion_Reaction_Inverse",
     "A_Simple_ODE",
     "LotkaVolterra",
     "SecondOrderODE",
@@ -41,6 +41,10 @@ __all__ = [
     "Fractional_Diffusion_1D",
     "InverseCase",
     "Lorenz_Inverse",
+    "Lorenz_Exogenous_Input_Inverse",
+    "Brinkman_Forchheimer_Inverse",
+    "Diffusion_Inverse",
+    "Diffusion_Reaction_Inverse",
 ]
 
 from .PDECases import (
@@ -50,7 +54,6 @@ from .PDECases import (
     Diffusion,
     Klein_Gordon,
     Beltrami_flow,
-    Diffusion_Reaction_Inverse,
     A_Simple_ODE,
     LotkaVolterra,
     SecondOrderODE,
@@ -79,6 +82,14 @@ from .PoissonCases import (
     Poisson_1D_Hard_Boundary,
     Poisson_1D_Fourier_Net,
     Poisson_2D_L_Shaped,
+    Poisson_1D_Unknown_Forcing_Field_Inverse,
 )
 from .WaveCases import WaveCase1D, Wave_1D_STMsFFN, Wave_1D_Hard_Boundary
-from .InverseCases import InverseCase, Lorenz_Inverse
+from .InverseCases import (
+    InverseCase,
+    Lorenz_Inverse,
+    Lorenz_Exogenous_Input_Inverse,
+    Brinkman_Forchheimer_Inverse,
+    Diffusion_Inverse,
+    Diffusion_Reaction_Inverse,
+)
