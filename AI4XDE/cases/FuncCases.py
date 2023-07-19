@@ -20,6 +20,7 @@ class FuncCases(ABC):
         self.compile = self.gen_compile(
             metrics, loss_weights, external_trainable_variables
         )
+        self.testdata = None
 
     def gen_compile(
         self,
@@ -57,6 +58,11 @@ class FuncCases(ABC):
     @abstractmethod
     def gen_testdata(self):
         pass
+
+    def get_testdata(self):
+        if self.testdata is None:
+            self.testdata = self.gen_testdata()
+        return self.testdata
 
     def set_axes(self, axes):
         pass
@@ -106,7 +112,7 @@ class FuncFromFormula(FuncCases):
     def plot_result(self, solver, axes=None, exact=True):
         from matplotlib import pyplot as plt
 
-        X, y = self.gen_testdata()
+        X, y = self.get_testdata()
         if axes is None:
             fig, axes = plt.subplots()
         if exact:
@@ -159,7 +165,7 @@ class FuncFromData(FuncCases):
     def plot_result(self, solver, axes=None, exact=True):
         from matplotlib import pyplot as plt
 
-        X, y = self.gen_testdata()
+        X, y = self.get_testdata()
         if axes is None:
             fig, axes = plt.subplots()
         if exact:

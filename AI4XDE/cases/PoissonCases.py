@@ -53,7 +53,7 @@ class PoissonCase1D(PDECases):
     def plot_result(self, solver, axes=None, exact=False):
         from matplotlib import pyplot as plt
 
-        X, y = self.gen_testdata()
+        X, y = self.get_testdata()
         if axes is None:
             fig, axes = plt.subplots()
         if exact:
@@ -553,7 +553,7 @@ class Poisson_1D_Unknown_Forcing_Field_Inverse(PoissonCase1D):
     def plot_result(self, solver, axes=None, exact=True):
         from matplotlib import pyplot as plt
 
-        X, y = self.gen_testdata()
+        X, y = self.get_testdata()
         y = np.hstack([self.func(X), y])
         if axes is None:
             fig, axes = plt.subplots()
