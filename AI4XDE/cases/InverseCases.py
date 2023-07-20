@@ -201,6 +201,7 @@ class Lorenz_Exogenous_Input_Inverse(InverseCase):
             dy1_x = dde.grad.jacobian(y, x, i=0)
             dy2_x = dde.grad.jacobian(y, x, i=1)
             dy3_x = dde.grad.jacobian(y, x, i=2)
+            ex = bkd.from_numpy(ex)
             return [
                 dy1_x - self.C1 * (y2 - y1),
                 dy2_x - y1 * (self.C2 - y3) + y2,
