@@ -13,6 +13,7 @@ Currently, AI4XDE supports the following algorithms:
 6. RAD
 7. R3Sampling
 8. HPO
+9. gPINN
 
 Currently,  AI4XDE supports the following examples:
 

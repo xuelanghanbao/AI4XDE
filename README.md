@@ -13,6 +13,7 @@ AI4XDE是一个用于科学机器学习和物理信息网络的综合库。AI4XD
 6. RAD
 7. R3Sampling
 8. HPO
+9. gPINN
 
 目前AI4XDE支持算例如下：
 

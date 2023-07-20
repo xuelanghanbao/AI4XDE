@@ -7,6 +7,7 @@ __all__ = [
     "RAR_D",
     "RAR_G",
     "Uniform",
+    "gPINN",
 ]
 
 from .HPO import HPO
@@ -17,3 +18,4 @@ from .Random_R import Random_R
 from .RAR_D import RAR_D
 from .RAR_G import RAR_G
 from .Uniform import Uniform
+from .gPINN import gPINN
