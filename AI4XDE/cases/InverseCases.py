@@ -643,112 +643,192 @@ class Diffusion_Reaction_Inverse(InverseCase):
         return fig, axes
 
 
-class Diffusion_Reaction_Exogenous_Input_Inverse(PDECases):
-    # TODO: test Diffusion_Reaction_Exogenous_Input_Inverse
+class Navier_Stokes_Incompressible_Flow_Around_Cylinder_Inverse(InverseCase):
     def __init__(
         self,
-        NumDomain=2000,
-        use_output_transform=False,
-        layer_size=[1, [20, 20], [20, 20], [20, 20], 2],
+        NumDomain=700,
+        layer_size=[3] + [50] * 6 + [3],
         activation="tanh",
         initializer="Glorot uniform",
     ):
-        self.res = self.gen_res()
-        self.metrics = self.gen_metrics()
+        self.C1 = dde.Variable(0.0)
+        self.C2 = dde.Variable(0.0)
+
+        self.C1_true = 1.0
+        self.C2_true = 0.01
         super().__init__(
-            name="Diffusion_Reaction_Inverse",
+            "Inverse problem for the Navier-Stokes equation of incompressible flow around cylinder",
+            external_trainable_variables=[self.C1, self.C2],
             NumDomain=NumDomain,
-            use_output_transform=use_output_transform,
+            use_output_transform=False,
             layer_size=layer_size,
             activation=activation,
             initializer=initializer,
         )
 
-    def sol(self, x):
-        return self.res.sol(x)[0]
+    def gen_testdata(self, num=7000):
+        import os
+        from scipy.io import loadmat
 
-    def gen_res(self):
-        from scipy.integrate import solve_bvp
-
-        def k(x):
-            return 0.1 + np.exp(-0.5 * (x - 0.5) ** 2 / 0.15**2)
-
-        def fun(x, y):
-            return np.vstack((y[1], 100 * (k(x) * y[0] + np.sin(2 * np.pi * x))))
-
-        def bc(ya, yb):
-            return np.array([ya[0], yb[0]])
-
-        a = np.linspace(0, 1, 1000)
-        b = np.zeros((2, a.size))
-
-        res = solve_bvp(fun, bc, a, b)
-        return res
-
-    def get_metrics(self, model):
-        xx = np.linspace(0, 1, 1001)[:, None]
-
-        def k(x):
-            return 0.1 + np.exp(-0.5 * (x - 0.5) ** 2 / 0.15**2)
-
-        def l2_u(_, __):
-            return dde.metrics.l2_relative_error(
-                self.sol(xx), model.predict(xx)[:, 0:1]
-            )
-
-        def l2_k(_, __):
-            return dde.metrics.l2_relative_error(k(xx), model.predict(xx)[:, 1:2])
-
-        return [l2_u, l2_k]
+        basepath = os.path.abspath(__file__)
+        folder = os.path.dirname(os.path.dirname(basepath))
+        data_path = os.path.join(folder, "data/cylinder_nektar_wake.mat")
+        data = loadmat(data_path)
+        U_star = data["U_star"]  # N x 2 x T
+        P_star = data["p_star"]  # N x T
+        t_star = data["t"]  # T x 1
+        X_star = data["X_star"]  # N x 2
+        N = X_star.shape[0]
+        T = t_star.shape[0]
+        # Rearrange Data
+        XX = np.tile(X_star[:, 0:1], (1, T))  # N x T
+        YY = np.tile(X_star[:, 1:2], (1, T))  # N x T
+        TT = np.tile(t_star, (1, N)).T  # N x T
+        UU = U_star[:, 0, :]  # N x T
+        VV = U_star[:, 1, :]  # N x T
+        PP = P_star  # N x T
+        x = XX.flatten()[:, None]  # NT x 1
+        y = YY.flatten()[:, None]  # NT x 1
+        t = TT.flatten()[:, None]  # NT x 1
+        u = UU.flatten()[:, None]  # NT x 1
+        v = VV.flatten()[:, None]  # NT x 1
+        p = PP.flatten()[:, None]  # NT x 1
+        # training domain: X × Y = [1, 8] × [−2, 2] and T = [0, 7]
+        data1 = np.concatenate([x, y, t, u, v, p], 1)
+        data2 = data1[:, :][data1[:, 2] <= 7]
+        data3 = data2[:, :][data2[:, 0] >= 1]
+        data4 = data3[:, :][data3[:, 0] <= 8]
+        data5 = data4[:, :][data4[:, 1] >= -2]
+        data_domain = data5[:, :][data5[:, 1] <= 2]
+        # choose number of training points: num =7000
+        idx = np.random.choice(data_domain.shape[0], num, replace=False)
+        x_train = data_domain[idx, 0:1]
+        y_train = data_domain[idx, 1:2]
+        t_train = data_domain[idx, 2:3]
+        u_train = data_domain[idx, 3:4]
+        v_train = data_domain[idx, 4:5]
+        p_train = data_domain[idx, 5:6]
+        return [
+            np.hstack((x_train, y_train, t_train)),
+            np.hstack((u_train, v_train, p_train)),
+        ]
 
     def gen_pde(self):
-        def pde(x, y):
+        def Navier_Stokes_Equation(x, y):
             u = y[:, 0:1]
-            k = y[:, 1:2]
-            du_xx = dde.grad.hessian(y, x, component=0)
-            return 0.01 * du_xx - k * u - bkd.sin(2 * np.pi * x)
+            v = y[:, 1:2]
+            p = y[:, 2:3]
+            du_x = dde.grad.jacobian(y, x, i=0, j=0)
+            du_y = dde.grad.jacobian(y, x, i=0, j=1)
+            du_t = dde.grad.jacobian(y, x, i=0, j=2)
+            dv_x = dde.grad.jacobian(y, x, i=1, j=0)
+            dv_y = dde.grad.jacobian(y, x, i=1, j=1)
+            dv_t = dde.grad.jacobian(y, x, i=1, j=2)
+            dp_x = dde.grad.jacobian(y, x, i=2, j=0)
+            dp_y = dde.grad.jacobian(y, x, i=2, j=1)
+            du_xx = dde.grad.hessian(y, x, component=0, i=0, j=0)
+            du_yy = dde.grad.hessian(y, x, component=0, i=1, j=1)
+            dv_xx = dde.grad.hessian(y, x, component=1, i=0, j=0)
+            dv_yy = dde.grad.hessian(y, x, component=1, i=1, j=1)
+            continuity = du_x + dv_y
+            x_momentum = (
+                du_t
+                + self.C1 * (u * du_x + v * du_y)
+                + dp_x
+                - self.C2 * (du_xx + du_yy)
+            )
+            y_momentum = (
+                dv_t
+                + self.C1 * (u * dv_x + v * dv_y)
+                + dp_y
+                - self.C2 * (dv_xx + dv_yy)
+            )
+            return [continuity, x_momentum, y_momentum]
 
-        return pde
-
-    def gen_net(self, layer_size, activation, initializer):
-        return dde.nn.PFNN(layer_size, activation, initializer)
+        return Navier_Stokes_Equation
 
     def gen_geomtime(self):
-        return dde.geometry.Interval(0, 1)
+        geom = dde.geometry.Rectangle([1.0, -2.0], [8.0, 2.0])
+        timedomain = dde.geometry.TimeDomain(0, 7)
+        return dde.geometry.GeometryXTime(geom, timedomain)
 
     def gen_data(self):
-        def gen_traindata(num):
-            xvals = np.linspace(0, 1, num)
-            yvals = self.sol(xvals)
-
-            return np.reshape(xvals, (-1, 1)), np.reshape(yvals, (-1, 1))
-
-        ob_x, ob_u = gen_traindata(8)
-        observe_u = dde.PointSetBC(ob_x, ob_u, component=0)
-        bc = dde.DirichletBC(
-            self.geomtime, self.sol, lambda _, on_boundary: on_boundary, component=0
-        )
-        return dde.data.PDE(
+        X, y = self.gen_testdata(num=7000)
+        ob_x, ob_y, ob_t = np.hsplit(X, 3)
+        ob_u, ob_v, ob_p = np.hsplit(y, 3)
+        ob_xyt = np.hstack((ob_x, ob_y, ob_t))
+        observe_u = dde.icbc.PointSetBC(ob_xyt, ob_u, component=0)
+        observe_v = dde.icbc.PointSetBC(ob_xyt, ob_v, component=1)
+        return dde.data.TimePDE(
             self.geomtime,
             self.pde,
-            bcs=[bc, observe_u],
-            num_domain=self.NumDomain - 2,
-            num_boundary=2,
-            train_distribution="pseudo",
-            num_test=1000,
+            [observe_u, observe_v],
+            num_domain=self.NumDomain,
+            num_boundary=200,
+            num_initial=100,
+            anchors=ob_xyt,
         )
 
-    def plot_result(self, solver, axes=None, exact=True):
+    def set_axes(self, axes, dim):
+        if dim == 3:
+            axes.set_zlim(0, 7)
+            axes.set_zlabel("t")
+        axes.set_xlim(1.0, 8.0)
+        axes.set_ylim(-2.0, 2.0)
+        axes.set_xlabel("x1")
+        axes.set_ylabel("x2")
+
+    def plot_data(self, X, axes=None):
         from matplotlib import pyplot as plt
 
-        X, y = self.get_testdata()
         if axes is None:
             fig, axes = plt.subplots()
-        if exact:
-            axes.plot(X, y, label="Exact")
-        axes.plot(X, solver.model.predict(X), "--", label="Prediction")
-        axes.legend()
-        axes.set_xlabel("x")
-        axes.set_ylabel("y")
-        axes.set_title(self.name)
-        return fig, axes
+        self.set_axes(axes, dim=3)
+        axes.scatter(X[:, 0], X[:, 1], X[:, 2])
+        return axes
+
+    def plot_heatmap_at_axes(self, X, y, axes, title):
+        axes.set_title(title)
+        self.set_axes(axes, dim=2)
+        return axes.pcolormesh(
+            X[:, 0].reshape(1000, 1000),
+            X[:, 1].reshape(1000, 1000),
+            y.reshape(1000, 1000),
+            cmap="rainbow",
+        )
+
+    def plot_result(self, solver):
+        C1_pred = bkd.to_numpy(self.C1)
+        C2_pred = bkd.to_numpy(self.C2)
+
+        C1_error = np.abs(C1_pred - self.C1_true)
+        C2_error = np.abs(C2_pred - self.C2_true)
+
+        print(f"C1 true: {self.C1_true}, C2 true: {self.C2_true}")
+        print(f"C1 pred: {C1_pred}, C2 pred: {C2_pred}")
+        print(f"C1 error: {C1_error}, C2 error: {C2_error}")
+
+        import matplotlib.pyplot as plt
+        import matplotlib.animation as animation
+
+        fig, axes = plt.subplots()
+        result_t = []
+        for t in np.linspace(0, 7, 100):
+            X = np.array(
+                [
+                    [x1, x2]
+                    for x1 in np.linspace(1, 8, 1000)
+                    for x2 in np.linspace(-2, 2, 1000)
+                ]
+            )
+            X = np.hstack((X, np.full((X.shape[0], 1), t)))
+            model_y = solver.model.predict(X)[:, 0]
+
+            axs = self.plot_heatmap_at_axes(X, model_y, axes, title=solver.name)
+            result_t.append([axs])
+
+        ani = animation.ArtistAnimation(fig, result_t)
+        ani.save(
+            "./result/Navier_Stokes_Incompressible_Flow_Around_Cylinder_Inverse.gif",
+            writer="pillow",
+        )
