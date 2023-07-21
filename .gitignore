@@ -1,6 +1,15 @@
+# python cache
 *.pyc
+
+# output of the model
 models
+result
+
+# test
 test.ipynb
+
+# build
 build
 dist
 AI4XDE.egg-info
+
