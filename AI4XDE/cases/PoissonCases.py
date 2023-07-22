@@ -50,7 +50,7 @@ class PoissonCase1D(PDECases):
 
         return pde
 
-    def plot_result(self, solver, axes=None, exact=False):
+    def plot_result(self, solver, axes=None, exact=True):
         from matplotlib import pyplot as plt
 
         X, y = self.get_testdata()
@@ -550,18 +550,90 @@ class Poisson_1D_Unknown_Forcing_Field_Inverse(PoissonCase1D):
     def gen_net(self, layer_size, activation, initializer):
         return dde.nn.PFNN(layer_size, activation, initializer)
 
-    def plot_result(self, solver, axes=None, exact=True):
-        from matplotlib import pyplot as plt
 
-        X, y = self.get_testdata()
-        y = np.hstack([self.func(X), y])
-        if axes is None:
-            fig, axes = plt.subplots()
-        if exact:
-            axes.plot(X, y, label="Exact")
-        axes.plot(X, solver.model.predict(X), "--", label="Prediction")
-        axes.legend()
-        axes.set_xlabel("t")
-        axes.set_ylabel("y")
-        axes.set_title(self.name)
-        return fig, axes
+class Poisson_1D_Fractional_Inverse(PoissonCase1D):
+    def __init__(
+        self,
+        NumDomain=20,
+        layer_size=[1] + [20] * 4 + [1],
+        activation="tanh",
+        initializer="Glorot normal",
+    ):
+        self.alpha = dde.Variable(1.5)
+        self.alpha_true = 1.8
+        self.Interval = [-1, 1]
+        super().__init__(
+            name="Inverse problem for the fractional Poisson equation in 1D",
+            NumDomain=NumDomain,
+            Interval=self.Interval,
+            external_trainable_variables=self.alpha,
+            use_output_transform=True,
+            layer_size=layer_size,
+            activation=activation,
+            initializer=initializer,
+            # loss_weights=[1, 100],
+            metrics=None,
+        )
+
+    def gen_pde(self):
+        from scipy.special import gamma
+
+        def fpde(x, y, int_mat):
+            """(D_{0+}^alpha + D_{1-}^alpha) u(x)"""
+            if isinstance(int_mat, (list, tuple)) and len(int_mat) == 3:
+                int_mat = bkd.sparse_tensor(*int_mat)
+                lhs = bkd.sparse_dense_matmul(int_mat, y)
+            else:
+                lhs = bkd.matmul(int_mat, y)
+            lhs /= 2 * bkd.cos(self.alpha * np.pi / 2)
+            rhs = gamma(bkd.to_numpy(self.alpha) + 2) * x
+            return lhs - rhs[: bkd.size(lhs)]
+
+        return fpde
+
+    def func(self, x):
+        pass
+
+    def sol(self, x):
+        return x * (np.abs(1 - x**2)) ** (self.alpha_true / 2)
+
+    def gen_data(self):
+        observe_x = np.linspace(-1, 1, num=20)[:, None]
+        observe_y = dde.icbc.PointSetBC(observe_x, self.sol(observe_x))
+
+        return dde.data.FPDE(
+            self.geomtime,
+            self.pde,
+            self.alpha,
+            observe_y,
+            [101],
+            meshtype="static",
+            anchors=observe_x,
+            solution=self.sol,
+        )
+        # L-BFGS optimizer is not supported for dynamic meshtype.
+        # return dde.data.FPDE(
+        #    self.geomtime,
+        #    self.pde,
+        #    self.alpha,
+        #    observe_y,
+        #    [100],
+        #    meshtype="dynamic",
+        #    num_domain=self.NumDomain,
+        #    anchors=observe_x,
+        #    solution=self.sol,
+        #    num_test=100,
+        # )
+
+    def output_transform(self, x, y):
+        return (1 - x**2) * y
+
+    def plot_result(self, solver):
+        alpha_pred = bkd.to_numpy(self.alpha)
+
+        alpha_error = np.abs(alpha_pred - self.alpha_true)
+
+        print(f"alpha true: {self.alpha_true}")
+        print(f"alpha pred: {alpha_pred}")
+        print(f"alpha error: {alpha_error}")
+        super().plot_result(solver)
