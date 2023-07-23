@@ -637,3 +637,146 @@ class Poisson_1D_Fractional_Inverse(PoissonCase1D):
         print(f"alpha pred: {alpha_pred}")
         print(f"alpha error: {alpha_error}")
         super().plot_result(solver)
+
+
+class Poisson_2D_Fractional_Inverse(PDECases):
+    def __init__(
+        self,
+        NumDomain=64,
+        layer_size=[2] + [20] * 4 + [1],
+        activation="tanh",
+        initializer="Glorot normal",
+    ):
+        self.alpha = dde.Variable(1.5)
+        self.alpha_true = 1.8
+        self.Interval = [-1, 1]
+        super().__init__(
+            name="Inverse problem for the fractional Poisson equation in 2D",
+            NumDomain=NumDomain,
+            external_trainable_variables=self.alpha,
+            use_output_transform=True,
+            layer_size=layer_size,
+            activation=activation,
+            initializer=initializer,
+            loss_weights=[1, 100],
+            metrics=None,
+        )
+
+    def gen_pde(self):
+        from scipy.special import gamma
+
+        def fpde(x, y, int_mat):
+            r"""\int_theta D_theta^alpha u(x)"""
+            if isinstance(int_mat, (list, tuple)) and len(int_mat) == 3:
+                int_mat = bkd.sparse_tensor(*int_mat)
+                lhs = bkd.sparse_dense_matmul(int_mat, y)
+            else:
+                lhs = bkd.matmul(int_mat, y)
+            lhs = lhs[:, 0]
+            lhs *= -bkd.exp(
+                bkd.lgamma((1 - self.alpha) / 2) + bkd.lgamma((2 + self.alpha) / 2)
+            ) / (2 * np.pi**1.5)
+            x = x[: bkd.size(lhs)]
+            alpha = bkd.to_numpy(self.alpha)
+            rhs = (
+                2**alpha
+                * gamma(2 + alpha / 2)
+                * gamma(1 + alpha / 2)
+                * (1 - (1 + alpha / 2) * bkd.sum(x**2, 1))
+            )
+            return lhs - rhs
+
+        return fpde
+
+    def gen_geomtime(self):
+        return dde.geometry.Disk([0, 0], 1)
+
+    def sol(self, x):
+        return (1 - np.linalg.norm(x, axis=1, keepdims=True) ** 2) ** (
+            1 + self.alpha_true / 2
+        )
+
+    def gen_data(self):
+        observe_x = self.geomtime.random_points(30)
+        observe_y = dde.icbc.PointSetBC(observe_x, self.sol(observe_x))
+
+        # L-BFGS optimizer is not supported for dynamic meshtype.
+        return dde.data.FPDE(
+            self.geomtime,
+            self.pde,
+            self.alpha,
+            observe_y,
+            [8, 100],
+            num_domain=self.NumDomain,
+            anchors=observe_x,
+            solution=self.sol,
+        )
+
+    def output_transform(self, x, y):
+        return (1 - bkd.sum(x**2, 1, keepdims=True)) * y
+
+    def set_axes(self, axes):
+        axes.set_xlim(-1, 1)
+        axes.set_ylim(-1, 1)
+        axes.set_xlabel("x1")
+        axes.set_ylabel("x2")
+
+    def plot_data(self, X, axes=None):
+        from matplotlib import pyplot as plt
+
+        if axes is None:
+            fig, axes = plt.subplots()
+        self.set_axes(axes)
+        axes.scatter(X[:, 0], X[:, 1])
+        return axes
+
+    def plot_heatmap_at_axes(self, X, y, axes, title):
+        axes.set_title(title)
+        self.set_axes(axes)
+        return axes.pcolormesh(
+            X[:, 0].reshape(1000, 1000),
+            X[:, 1].reshape(1000, 1000),
+            y.reshape(1000, 1000),
+            cmap="rainbow",
+        )
+
+    def plot_result(self, solver, colorbar=None):
+        alpha_pred = bkd.to_numpy(self.alpha)
+
+        alpha_error = np.abs(alpha_pred - self.alpha_true)
+
+        print(f"alpha true: {self.alpha_true}")
+        print(f"alpha pred: {alpha_pred}")
+        print(f"alpha error: {alpha_error}")
+
+        from matplotlib import pyplot as plt
+
+        X = np.array(
+            [
+                [x1, x2]
+                for x1 in np.linspace(-1, 1, 1000)
+                for x2 in np.linspace(-1, 1, 1000)
+            ]
+        )
+        y = self.sol(X)
+        y[self.geomtime.inside(X) == 0] = np.nan
+        model_y = solver.model.predict(X)
+        model_y[self.geomtime.inside(X) == 0] = np.nan
+
+        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+        axs = []
+        axs.append(
+            self.plot_heatmap_at_axes(X, y, axes=axes[0], title="Exact solution")
+        )
+        axs.append(self.plot_heatmap_at_axes(X, model_y, axes[1], title=solver.name))
+        axs.append(
+            self.plot_heatmap_at_axes(
+                X, np.abs(model_y - y), axes[2], title="Absolute error"
+            )
+        )
+
+        for needColorbar, ax, axe in zip(colorbar, axs, axes):
+            if needColorbar:
+                fig.colorbar(ax, ax=axe)
+        plt.show()
+        return fig, axes
