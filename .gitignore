@@ -7,9 +7,9 @@ result
 
 # test
 test.ipynb
+test.py
 
 # build
 build
 dist
 AI4XDE.egg-info
-
