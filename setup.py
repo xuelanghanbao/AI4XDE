@@ -2,24 +2,24 @@ from setuptools import setup
 from setuptools import find_packages
 
 
-VERSION = '0.1.5'
+VERSION = "0.2.0"
 
-with open('README.en.md') as f:
+with open("README.en.md") as f:
     LONG_DESCRIPTION = f.read()
 
 setup(
-    name='ai4xde',  # package name
+    name="ai4xde",  # package name
     version=VERSION,  # package version
-    description='AI4XDE is a library for scientific machine learning and physics-informed learning',  # package description
+    description="AI4XDE is a library for scientific machine learning and physics-informed learning",  # package description
     long_description=LONG_DESCRIPTION,
-    long_description_content_type='text/markdown',
-    author='xuelanghanbao',  # author name
-    author_email='xuelanghanbao@gmail.com',
+    long_description_content_type="text/markdown",
+    author="xuelanghanbao",  # author name
+    author_email="xuelanghanbao@gmail.com",
     project_urls={
         "Code": "https://gitee.com/xuelanghanbao/AI4XDE",
         "Issue tracker": "https://gitee.com/xuelanghanbao/AI4XDE/issues",
     },
-    license='GNU Lesser General Public License v2 (LGPLv2) (LGPL-2.1)',
+    license="GNU Lesser General Public License v2 (LGPLv2) (LGPL-2.1)",
     packages=find_packages(),
     include_package_data=True,
     classifiers=[
