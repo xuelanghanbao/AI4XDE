@@ -76,7 +76,7 @@ class PINNSolver:
         print("L2 relative error:", error)
         self.error.append(np.array(error))
 
-    def train_step(self, lr=1e-3, iterations=15000, callbacks=None, eval=True):
+    def train_step(self, lr=1e-3, iterations=15000, callbacks=None, eval=False):
         self.PDECase.compile(self.model, "adam", lr=lr)
         self.model.train(iterations=iterations, callbacks=callbacks)
         self.PDECase.compile(self.model, "L-BFGS")
