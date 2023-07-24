@@ -15,19 +15,16 @@ class FuncCases(ABC):
         external_trainable_variables=None,
     ):
         self.name = name
+        self.metrics = metrics
+        self.loss_weights = loss_weights
+        self.external_trainable_variables = external_trainable_variables
+
         self.net = self.gen_net(layer_size, activation, initializer)
         self.data = self.gen_data()
-        self.compile = self.gen_compile(
-            metrics, loss_weights, external_trainable_variables
-        )
+        self.compile = self.gen_compile()
         self.testdata = None
 
-    def gen_compile(
-        self,
-        metrics=None,
-        loss_weights=None,
-        external_trainable_variables=None,
-    ):
+    def gen_compile(self):
         def compile(
             model,
             optimizer,
@@ -39,13 +36,17 @@ class FuncCases(ABC):
                 optimizer,
                 lr,
                 loss,
-                metrics,
+                self.metrics,
                 decay,
-                loss_weights,
-                external_trainable_variables,
+                self.loss_weights,
+                self.external_trainable_variables,
             )
 
         return compile
+
+    def set_loss_weights(self, loss_weights):
+        self.loss_weights = loss_weights
+        self.compile = self.gen_compile()
 
     def gen_net(self, layer_size, activation, initializer):
         net = dde.maps.FNN(layer_size, activation, initializer)

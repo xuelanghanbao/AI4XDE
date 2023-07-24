@@ -21,13 +21,15 @@ class PDECases(ABC):
         self.NumDomain = NumDomain
         self.test_data = None
         self.use_output_transform = use_output_transform
+        self.metrics = metrics
+        self.loss_weights = loss_weights
+        self.external_trainable_variables = external_trainable_variables
+
         self.net = self.gen_net(layer_size, activation, initializer)
         self.pde = self.gen_pde()
         self.geomtime = self.gen_geomtime()
         self.data = self.gen_data()
-        self.compile = self.gen_compile(
-            metrics, loss_weights, external_trainable_variables
-        )
+        self.compile = self.gen_compile()
         self.test_data = None
 
     def gen_net(self, layer_size, activation, initializer):
@@ -61,12 +63,7 @@ class PDECases(ABC):
             self.test_data = self.gen_testdata()
         return self.test_data
 
-    def gen_compile(
-        self,
-        metrics=None,
-        loss_weights=None,
-        external_trainable_variables=None,
-    ):
+    def gen_compile(self):
         def compile(
             model,
             optimizer,
@@ -78,13 +75,17 @@ class PDECases(ABC):
                 optimizer,
                 lr,
                 loss,
-                metrics,
+                self.metrics,
                 decay,
-                loss_weights,
-                external_trainable_variables,
+                self.loss_weights,
+                self.external_trainable_variables,
             )
 
         return compile
+
+    def set_loss_weights(self, loss_weights):
+        self.loss_weights = loss_weights
+        self.compile = self.gen_compile()
 
     def output_transform(self, x, y):
         pass

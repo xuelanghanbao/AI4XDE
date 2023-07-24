@@ -10,7 +10,20 @@ class gPINN(PINNSolver):
 
     def add_gradient_enhanced_res(self, PDECase):
         pde = PDECase.pde
-        if dde.utils.get_num_args(pde) == 2:
+        pde_num_args = dde.utils.get_num_args(pde)
+        if PDECase.loss_weights is not None:
+            icbc_len = len(PDECase.data.bcs)
+            x_dim = PDECase.geomtime.random_points(1).shape[1]
+            res_dim = len(PDECase.loss_weights) - icbc_len
+            g_res_dim = res_dim * x_dim
+            loss_weights = (
+                PDECase.loss_weights[:res_dim]
+                + [1] * g_res_dim
+                + PDECase.loss_weights[res_dim:]
+            )
+            PDECase.set_loss_weights(loss_weights)
+
+        if pde_num_args == 2:
 
             def g_pde(x, y):
                 g_res = []
@@ -32,7 +45,7 @@ class gPINN(PINNSolver):
 
                 return g_res
 
-        elif dde.utils.get_num_args(pde) == 3:
+        elif pde_num_args == 3:
 
             def g_pde(x, y, ex):
                 g_res = []
