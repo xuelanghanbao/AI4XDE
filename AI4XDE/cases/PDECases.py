@@ -1,6 +1,7 @@
 import numpy as np
 import deepxde as dde
 import deepxde.backend as bkd
+from ..utils import Visualization
 from abc import ABC, abstractmethod
 
 
@@ -156,18 +157,7 @@ class A_Simple_ODE(PDECases):
         return np.hstack((np.sin(x), np.cos(x)))
 
     def plot_result(self, solver, axes=None, exact=True):
-        from matplotlib import pyplot as plt
-
-        xx = np.linspace(-np.pi / 2, np.pi / 2, 1001)[:, None]
-        if axes is None:
-            fig, axes = plt.subplots()
-        if exact:
-            axes.plot(xx, self.sol(xx), label="Exact")
-        axes.plot(xx, solver.model.predict(xx), "--", label="Prediction")
-        axes.legend()
-        axes.set_xlabel("x")
-        axes.set_ylabel("y")
-        axes.set_title(self.name)
+        fig, axes = Visualization.plot_1D_result(self, solver, axes, exact, "x", "y")
         return fig, axes
 
 
@@ -273,18 +263,9 @@ class LotkaVolterra(PDECases):
         return x_true, y_true
 
     def plot_result(self, solver, axes=None, exact=True):
-        from matplotlib import pyplot as plt
-
-        X, y = self.get_testdata()
-        if axes is None:
-            fig, axes = plt.subplots()
-        if exact:
-            axes.plot(X, y, label="Exact")
-        axes.plot(X, solver.model.predict(X), "--", label="Prediction")
-        axes.legend()
-        axes.set_xlabel("t")
-        axes.set_ylabel("population")
-        axes.set_title(self.name)
+        fig, axes = Visualization.plot_1D_result(
+            self, solver, axes, exact, "t", "population"
+        )
         return fig, axes
 
 
@@ -344,18 +325,7 @@ class SecondOrderODE(PDECases):
         )
 
     def plot_result(self, solver, axes=None, exact=True):
-        from matplotlib import pyplot as plt
-
-        X, y = self.get_testdata()
-        if axes is None:
-            fig, axes = plt.subplots()
-        if exact:
-            axes.plot(X, y, label="Exact")
-        axes.plot(X, solver.model.predict(X), "--", label="Prediction")
-        axes.legend()
-        axes.set_xlabel("t")
-        axes.set_ylabel("y")
-        axes.set_title(self.name)
+        fig, axes = Visualization.plot_1D_result(self, solver, axes, exact, "t", "y")
         return fig, axes
 
 
@@ -543,18 +513,7 @@ class Euler_Beam(PDECases):
         )
 
     def plot_result(self, solver, axes=None, exact=True):
-        from matplotlib import pyplot as plt
-
-        X, y = self.get_testdata()
-        if axes is None:
-            fig, axes = plt.subplots()
-        if exact:
-            axes.plot(X, y, label="Exact")
-        axes.plot(X, solver.model.predict(X), "--", label="Prediction")
-        axes.legend()
-        axes.set_xlabel("t")
-        axes.set_ylabel("y")
-        axes.set_title(self.name)
+        fig, axes = Visualization.plot_1D_result(self, solver, axes, exact, "t", "y")
         return fig, axes
 
 
@@ -2377,18 +2336,7 @@ class IDE(PDECases):
         )
 
     def plot_result(self, solver, axes=None, exact=True):
-        from matplotlib import pyplot as plt
-
-        X, y = self.get_testdata()
-        if axes is None:
-            fig, axes = plt.subplots()
-        if exact:
-            axes.plot(X, y, label="Exact")
-        axes.plot(X, solver.model.predict(X), "--", label="Prediction")
-        axes.legend()
-        axes.set_xlabel("t")
-        axes.set_ylabel("y")
-        axes.set_title(self.name)
+        fig, axes = Visualization.plot_result(self, solver, axes, exact, "t", "y")
         return fig, axes
 
 
@@ -2444,18 +2392,7 @@ class Volterra_IDE(PDECases):
         )
 
     def plot_result(self, solver, axes=None, exact=True):
-        from matplotlib import pyplot as plt
-
-        X, y = self.get_testdata()
-        if axes is None:
-            fig, axes = plt.subplots()
-        if exact:
-            axes.plot(X, y, label="Exact")
-        axes.plot(X, solver.model.predict(X), "--", label="Prediction")
-        axes.legend()
-        axes.set_xlabel("t")
-        axes.set_ylabel("y")
-        axes.set_title(self.name)
+        fig, axes = Visualization.plot_result(self, solver, axes, exact, "t", "y")
         return fig, axes
 
 
@@ -2533,18 +2470,7 @@ class Fractional_Poisson_1D(PDECases):
         return x * (1 - x) * y
 
     def plot_result(self, solver, axes=None, exact=True):
-        from matplotlib import pyplot as plt
-
-        X, y = self.get_testdata()
-        if axes is None:
-            fig, axes = plt.subplots()
-        if exact:
-            axes.plot(X, y, label="Exact")
-        axes.plot(X, solver.model.predict(X), "--", label="Prediction")
-        axes.legend()
-        axes.set_xlabel("x")
-        axes.set_ylabel("y")
-        axes.set_title(self.name)
+        fig, axes = Visualization.plot_result(self, solver, axes, exact, "x", "y")
         return fig, axes
 
 

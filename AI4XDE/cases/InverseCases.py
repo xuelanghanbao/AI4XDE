@@ -3,6 +3,7 @@ import deepxde as dde
 import deepxde.backend as bkd
 from abc import abstractmethod
 from .PDECases import PDECases
+from ..utils import Visualization
 
 
 class InverseCase(PDECases):
@@ -130,18 +131,7 @@ class Lorenz_Inverse(InverseCase):
         print(f"C1 pred: {C1_pred}, C2 pred: {C2_pred}, C3 pred: {C3_pred}")
         print(f"C1 error: {C1_error}, C2 error: {C2_error}, C3 error: {C3_error}")
 
-        from matplotlib import pyplot as plt
-
-        X, y = self.get_testdata()
-        if axes is None:
-            fig, axes = plt.subplots()
-        if exact:
-            axes.plot(X, y, label="Exact")
-        axes.plot(X, solver.model.predict(X), "--", label="Prediction")
-        axes.legend()
-        axes.set_xlabel("t")
-        axes.set_ylabel("y")
-        axes.set_title(self.name)
+        fig, axes = Visualization.plot_1D_result(self, solver, axes, exact, "t", "y")
         return fig, axes
 
 
@@ -264,18 +254,7 @@ class Lorenz_Exogenous_Input_Inverse(InverseCase):
         print(f"C1 pred: {C1_pred}, C2 pred: {C2_pred}, C3 pred: {C3_pred}")
         print(f"C1 error: {C1_error}, C2 error: {C2_error}, C3 error: {C3_error}")
 
-        from matplotlib import pyplot as plt
-
-        X, y = self.get_testdata()
-        if axes is None:
-            fig, axes = plt.subplots()
-        if exact:
-            axes.plot(X, y, label="Exact")
-        axes.plot(X, solver.model.predict(X), "--", label="Prediction")
-        axes.legend()
-        axes.set_xlabel("t")
-        axes.set_ylabel("y")
-        axes.set_title(self.name)
+        fig, axes = Visualization.plot_1D_result(self, solver, axes, exact, "t", "y")
         return fig, axes
 
 
@@ -353,18 +332,7 @@ class Brinkman_Forchheimer_Inverse(InverseCase):
         print(f"v_e pred: {v_e_pred}, K pred: {K_pred}")
         print(f"v_e error: {v_e_error}, K error: {K_error}")
 
-        from matplotlib import pyplot as plt
-
-        X, y = self.get_testdata()
-        if axes is None:
-            fig, axes = plt.subplots()
-        if exact:
-            axes.plot(X, y, label="Exact")
-        axes.plot(X, solver.model.predict(X), "--", label="Prediction")
-        axes.legend()
-        axes.set_xlabel("t")
-        axes.set_ylabel("y")
-        axes.set_title(self.name)
+        fig, axes = Visualization.plot_1D_result(self, solver, axes, exact, "t", "y")
         return fig, axes
 
 

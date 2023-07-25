@@ -3,6 +3,7 @@ import deepxde as dde
 import deepxde.backend as bkd
 from .PDECases import PDECases
 from abc import abstractmethod
+from ..utils import Visualization
 
 
 class PoissonCase1D(PDECases):
@@ -51,18 +52,7 @@ class PoissonCase1D(PDECases):
         return pde
 
     def plot_result(self, solver, axes=None, exact=True):
-        from matplotlib import pyplot as plt
-
-        X, y = self.get_testdata()
-        if axes is None:
-            fig, axes = plt.subplots()
-        if exact:
-            axes.plot(X, y, label="Exact")
-        axes.plot(X, solver.model.predict(X), "--", label="Prediction")
-        axes.legend()
-        axes.set_xlabel("t")
-        axes.set_ylabel("y")
-        axes.set_title(self.name)
+        fig, axes = Visualization.plot_1D_result(self, solver, axes, exact, "x", "y")
         return fig, axes
 
 

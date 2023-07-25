@@ -1,5 +1,6 @@
 import numpy as np
 import deepxde as dde
+from ..utils import Visualization
 from abc import ABC, abstractmethod
 
 
@@ -111,18 +112,7 @@ class FuncFromFormula(FuncCases):
         return x, y
 
     def plot_result(self, solver, axes=None, exact=True):
-        from matplotlib import pyplot as plt
-
-        X, y = self.get_testdata()
-        if axes is None:
-            fig, axes = plt.subplots()
-        if exact:
-            axes.plot(X, y, label="Exact")
-        axes.plot(X, solver.model.predict(X), "--", label="Prediction")
-        axes.legend()
-        axes.set_xlabel("t")
-        axes.set_ylabel("population")
-        axes.set_title(self.name)
+        fig, axes = Visualization.plot_1D_result(self, solver, axes, exact, "x", "y")
         return fig, axes
 
 
@@ -164,16 +154,5 @@ class FuncFromData(FuncCases):
         return x, y
 
     def plot_result(self, solver, axes=None, exact=True):
-        from matplotlib import pyplot as plt
-
-        X, y = self.get_testdata()
-        if axes is None:
-            fig, axes = plt.subplots()
-        if exact:
-            axes.plot(X, y, label="Exact")
-        axes.plot(X, solver.model.predict(X), "--", label="Prediction")
-        axes.legend()
-        axes.set_xlabel("t")
-        axes.set_ylabel("population")
-        axes.set_title(self.name)
+        fig, axes = Visualization.plot_1D_result(self, solver, axes, exact, "x", "y")
         return fig, axes
