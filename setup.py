@@ -2,7 +2,7 @@ from setuptools import setup
 from setuptools import find_packages
 
 
-VERSION = "0.2.0"
+VERSION = "0.2.1"
 
 with open("README.en.md") as f:
     LONG_DESCRIPTION = f.read()
@@ -28,6 +28,7 @@ setup(
         "License :: OSI Approved :: GNU Lesser General Public License v2 (LGPLv2)",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3 :: Only",
+        "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
@@ -36,7 +37,7 @@ setup(
         "Topic :: Scientific/Engineering :: Artificial Intelligence",
         "Topic :: Scientific/Engineering :: Mathematics",
     ],
-    python_requires=">=3.8",
+    python_requires=">=3.7",
     install_requires=[
         "deepxde",
         "numpy",
