@@ -97,7 +97,7 @@ class PDECases(ABC):
     def plot_data(self, X, axes=None):
         pass
 
-    def plot_reslult(self, solver):
+    def plot_result(self, solver):
         pass
 
     def set_pde(self, pde):
