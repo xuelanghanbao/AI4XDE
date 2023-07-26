@@ -21,7 +21,7 @@ class HPO(PINNSolver):
         self.n_calls = n_calls
         self.default_parameters = default_parameters
         self.ITERATION = 0
-        self.d = self.get_layer_size(PDECase)
+        self.in_d, self.out_d = self.get_layer_size(PDECase)
         super().__init__(name="HPO", PDECase=PDECase)
 
     def get_layer_size(self, PDECase):
@@ -29,13 +29,14 @@ class HPO(PINNSolver):
         init_defaults = dict(
             zip(argspec.args[-len(argspec.defaults) :], argspec.defaults)
         )
-        b = init_defaults["layer_size"][0]
-        return b
+        in_d = init_defaults["layer_size"][0]
+        out_d = init_defaults["layer_size"][-1]
+        return in_d, out_d
 
     def create_model(self, config):
         learning_rate, num_dense_layers, num_dense_nodes, activation = config
         self.PDECase.net = self.PDECase.gen_net(
-            [self.d] + [num_dense_nodes] * num_dense_layers + [1],
+            [self.in_d] + [num_dense_nodes] * num_dense_layers + [self.out_d],
             activation,
             "Glorot uniform",
         )
