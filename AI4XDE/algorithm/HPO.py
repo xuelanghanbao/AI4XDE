@@ -102,6 +102,8 @@ class HPO(PINNSolver):
             random_state=1234,
         )
 
+        self.search_result = search_result
+
         print(search_result.x)
 
         plot_convergence(search_result)
