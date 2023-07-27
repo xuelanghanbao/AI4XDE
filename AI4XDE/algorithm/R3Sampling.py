@@ -14,9 +14,7 @@ class R3Sampling(PINNSolver):
         name = "R3Sampling"
         if causally_sampling:
             name += "_causal"
-            PDECase.data.pde = lambda x, y: PDECase.pde(x, y) * self.causal_weight(
-                bkd.to_numpy(x), tensor=True
-            )
+            self.set_causal_pde(PDECase)
         super().__init__(name=name, PDECase=PDECase)
         self.gamma = -0.5
         self.alpha = 5
@@ -24,6 +22,42 @@ class R3Sampling(PINNSolver):
         self.causally_sampling = causally_sampling
         self.beta_lr = beta_lr
         self.tol = tol
+
+    def set_causal_pde(self, PDECase):
+        pde = PDECase.pde
+        pde_num_args = dde.utils.get_num_args(pde)
+
+        if pde_num_args == 2:
+
+            def g_pde(x, y):
+                res = pde(x, y)
+                causal_weight = self.causal_weight(bkd.to_numpy(x), tensor=True)
+                causal_weight = bkd.expand_dims(causal_weight, axis=1)
+
+                if not isinstance(res, list):
+                    res = [res]
+
+                for res_i in res:
+                    res_i = res_i * causal_weight
+
+                return res
+
+        elif pde_num_args == 3:
+
+            def g_pde(x, y, ex):
+                res = pde(x, y, ex)
+
+                causal_weight = self.causal_weight(bkd.to_numpy(x), tensor=True)
+
+                if not isinstance(res, list):
+                    res = [res]
+
+                for res_i in res:
+                    res_i *= causal_weight
+
+                return res
+
+        PDECase.set_pde(g_pde)
 
     def update_gamma(self, loss):
         self.gamma += self.beta_lr * np.exp(-self.tol * loss)
@@ -38,7 +72,8 @@ class R3Sampling(PINNSolver):
         return weight
 
     def residual(self, X, causally_sampling=False):
-        res = np.abs(self.model.predict(X, operator=self.PDECase.pde))[:, 0]
+        res = np.abs(self.model.predict(X, operator=self.PDECase.pde))
+        res = np.sum(np.squeeze(res).T, axis=1)
         if causally_sampling:
             res = res * self.causal_weight(X)
             self.update_gamma(np.mean(res))
