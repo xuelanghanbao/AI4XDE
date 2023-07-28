@@ -6,7 +6,7 @@ from ..solver.PDESolver import PINNSolver
 class gPINN(PINNSolver):
     def __init__(self, PDECase):
         self.add_gradient_enhanced_res(PDECase)
-        super().__init__(name="PINN", PDECase=PDECase)
+        super().__init__(name="gPINN", PDECase=PDECase)
 
     def add_gradient_enhanced_res(self, PDECase):
         pde = PDECase.pde
