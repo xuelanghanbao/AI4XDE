@@ -17,11 +17,12 @@ class RAD(PINNSolver):
         self.train_step()
 
         for i in range(self.iter):
-            X = self.PDECase.geomtime.random_points(100000)
+            sample_num = self.PDECase.NumDomain * 10
+            X = self.PDECase.geomtime.random_points(sample_num)
             Y = np.abs(self.model.predict(X, operator=self.PDECase.pde)).astype(
                 np.float64
             )
-            if Y.shape[0] != 100000:
+            if Y.shape[0] != sample_num:
                 Y = np.sum(Y, axis=0)
             err_eq = np.power(Y, self.k) / np.power(Y, self.k).mean() + self.c
             err_eq_normalized = (err_eq / sum(err_eq))[:, 0]
