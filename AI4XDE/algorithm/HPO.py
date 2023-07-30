@@ -83,9 +83,7 @@ class HPO(PINNSolver):
 
             # Create the neural network with these hyper-parameters.
             self.create_model(config)
-            # possibility to change where we save
             error = self.train_step()
-            # print(accuracy, 'accuracy is')
 
             if np.isnan(error):
                 error = 10**5
