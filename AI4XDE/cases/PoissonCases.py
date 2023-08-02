@@ -3,7 +3,7 @@ import deepxde as dde
 import deepxde.backend as bkd
 from .PDECases import PDECases
 from abc import abstractmethod
-from ..utils import Visualization
+from ..utils.Visualization import *
 
 
 class PoissonCase1D(PDECases):
@@ -31,6 +31,7 @@ class PoissonCase1D(PDECases):
             metrics=metrics,
             loss_weights=loss_weights,
             external_trainable_variables=external_trainable_variables,
+            visualization=Visualization_1D(),
         )
 
     @abstractmethod
@@ -52,7 +53,9 @@ class PoissonCase1D(PDECases):
         return pde
 
     def plot_result(self, solver, axes=None, exact=True):
-        fig, axes = Visualization.plot_1D_result(self, solver, axes, exact, "x", "y")
+        fig, axes = self.Visualization.plot_1D_result(
+            self, solver, axes, exact, "x", "y"
+        )
         return fig, axes
 
 
@@ -399,6 +402,9 @@ class Poisson_2D_L_Shaped(PDECases):
         activation="tanh",
         initializer="Glorot uniform",
     ):
+        visualization = Visualization_2D(
+            x_limit=[-1, 1], y_limit=[-1, 1], x_label="x1", y_label="x2"
+        )
         super().__init__(
             name="Poisson equation over L-shaped domain",
             NumDomain=NumDomain,
@@ -407,6 +413,7 @@ class Poisson_2D_L_Shaped(PDECases):
             activation=activation,
             initializer=initializer,
             metrics=None,
+            visualization=visualization,
         )
 
     def gen_data(self):
@@ -443,31 +450,6 @@ class Poisson_2D_L_Shaped(PDECases):
         y = np.linspace(-1, 1, 1000).T
         return X, y
 
-    def set_axes(self, axes):
-        axes.set_xlim(-1, 1)
-        axes.set_ylim(-1, 1)
-        axes.set_xlabel("x1")
-        axes.set_ylabel("x2")
-
-    def plot_data(self, X, axes=None):
-        from matplotlib import pyplot as plt
-
-        if axes is None:
-            fig, axes = plt.subplots()
-        self.set_axes(axes)
-        axes.scatter(X[:, 0], X[:, 1])
-        return axes
-
-    def plot_heatmap_at_axes(self, X, y, axes, title):
-        axes.set_title(title)
-        self.set_axes(axes)
-        return axes.pcolormesh(
-            X[:, 0].reshape(1000, 1000),
-            X[:, 1].reshape(1000, 1000),
-            y.reshape(1000, 1000),
-            cmap="rainbow",
-        )
-
     def plot_result(self, solver, colorbar=None):
         from matplotlib import pyplot as plt
 
@@ -479,7 +461,11 @@ class Poisson_2D_L_Shaped(PDECases):
         model_y[self.geomtime.inside(X) == 0] = np.nan
 
         fig, axes = plt.subplots()
-        self.plot_heatmap_at_axes(X, model_y, axes, title=solver.name)
+        ax = self.Visualization.plot_heatmap_2D(
+            X, model_y, shape=[1000, 1000], axes=axes, title=solver.name
+        )
+        if colorbar:
+            fig.colorbar(ax, ax=axes)
         plt.show()
         return fig, axes
 
@@ -640,6 +626,9 @@ class Poisson_2D_Fractional_Inverse(PDECases):
         self.alpha = dde.Variable(1.5)
         self.alpha_true = 1.8
         self.Interval = [-1, 1]
+        visualization = Visualization_2D(
+            x_limit=[-1, 1], y_limit=[-1, 1], x_label="x1", y_label="x2"
+        )
         super().__init__(
             name="Inverse problem for the fractional Poisson equation in 2D",
             NumDomain=NumDomain,
@@ -650,6 +639,7 @@ class Poisson_2D_Fractional_Inverse(PDECases):
             initializer=initializer,
             loss_weights=[1, 100],
             metrics=None,
+            visualization=visualization,
         )
 
     def gen_pde(self):
@@ -705,32 +695,7 @@ class Poisson_2D_Fractional_Inverse(PDECases):
     def output_transform(self, x, y):
         return (1 - bkd.sum(x**2, 1, keepdims=True)) * y
 
-    def set_axes(self, axes):
-        axes.set_xlim(-1, 1)
-        axes.set_ylim(-1, 1)
-        axes.set_xlabel("x1")
-        axes.set_ylabel("x2")
-
-    def plot_data(self, X, axes=None):
-        from matplotlib import pyplot as plt
-
-        if axes is None:
-            fig, axes = plt.subplots()
-        self.set_axes(axes)
-        axes.scatter(X[:, 0], X[:, 1])
-        return axes
-
-    def plot_heatmap_at_axes(self, X, y, axes, title):
-        axes.set_title(title)
-        self.set_axes(axes)
-        return axes.pcolormesh(
-            X[:, 0].reshape(1000, 1000),
-            X[:, 1].reshape(1000, 1000),
-            y.reshape(1000, 1000),
-            cmap="rainbow",
-        )
-
-    def plot_result(self, solver, colorbar=None):
+    def plot_result(self, solver, colorbar=[0, 0, 0]):
         alpha_pred = bkd.to_numpy(self.alpha)
 
         alpha_error = np.abs(alpha_pred - self.alpha_true)
@@ -755,13 +720,20 @@ class Poisson_2D_Fractional_Inverse(PDECases):
 
         fig, axes = plt.subplots(1, 3, figsize=(15, 5))
         axs = []
+        shape = [1000, 1000]
         axs.append(
-            self.plot_heatmap_at_axes(X, y, axes=axes[0], title="Exact solution")
+            self.Visualization.plot_heatmap_2D(
+                X, y, shape, axes=axes[0], title="Exact solution"
+            )
         )
-        axs.append(self.plot_heatmap_at_axes(X, model_y, axes[1], title=solver.name))
         axs.append(
-            self.plot_heatmap_at_axes(
-                X, np.abs(model_y - y), axes[2], title="Absolute error"
+            self.Visualization.plot_heatmap_2D(
+                X, model_y, shape, axes=axes[1], title=solver.name
+            )
+        )
+        axs.append(
+            self.Visualization.plot_heatmap_2D(
+                X, np.abs(model_y - y), shape, axes=axes[2], title="Absolute error"
             )
         )
 
