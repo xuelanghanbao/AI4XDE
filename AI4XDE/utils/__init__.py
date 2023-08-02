@@ -1,3 +1,3 @@
-__all__ = ["Visualization"]
+__all__ = ["Visualization_1D", "Visualization_2D"]
 
-from . import Visualization
+from .Visualization import Visualization_1D, Visualization_2D

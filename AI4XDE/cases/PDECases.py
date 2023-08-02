@@ -1,7 +1,7 @@
 import numpy as np
 import deepxde as dde
 import deepxde.backend as bkd
-from ..utils import Visualization
+from ..utils import *
 from abc import ABC, abstractmethod
 
 
@@ -17,6 +17,7 @@ class PDECases(ABC):
         metrics=None,
         loss_weights=None,
         external_trainable_variables=None,
+        visualization=None,
     ):
         self.name = name
         self.NumDomain = NumDomain
@@ -25,6 +26,7 @@ class PDECases(ABC):
         self.metrics = metrics
         self.loss_weights = loss_weights
         self.external_trainable_variables = external_trainable_variables
+        self.Visualization = visualization
 
         self.net = self.gen_net(layer_size, activation, initializer)
         self.pde = self.gen_pde()
@@ -89,12 +91,6 @@ class PDECases(ABC):
         self.compile = self.gen_compile()
 
     def output_transform(self, x, y):
-        pass
-
-    def set_axes(self, axes):
-        pass
-
-    def plot_data(self, X, axes=None):
         pass
 
     def plot_result(self, solver):
