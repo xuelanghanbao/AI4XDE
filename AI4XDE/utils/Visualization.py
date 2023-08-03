@@ -60,13 +60,15 @@ class Visualization_2D:
 
     def plot_data_2D(self, X, **kwargs):
         axes = self.set_axes_2D(**kwargs)
-        X = self.feature_transform(X)
+        if self.feature_transform is not None:
+            X = self.feature_transform(X)
         axes.scatter(X[:, 0], X[:, 1])
         return axes
 
     def plot_heatmap_2D(self, X, y, shape, **kwargs):
         axes = self.set_axes_2D(**kwargs)
-        X = self.feature_transform(X)
+        if self.feature_transform is not None:
+            X = self.feature_transform(X)
         return axes.pcolormesh(
             X[:, 0].reshape(shape[0], shape[1]),
             X[:, 1].reshape(shape[0], shape[1]),
