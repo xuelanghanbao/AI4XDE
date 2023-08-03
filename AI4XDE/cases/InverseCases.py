@@ -134,7 +134,7 @@ class Lorenz_Inverse(InverseCase):
         print(f"C1 pred: {C1_pred}, C2 pred: {C2_pred}, C3 pred: {C3_pred}")
         print(f"C1 error: {C1_error}, C2 error: {C2_error}, C3 error: {C3_error}")
 
-        axes = self.Visualization.plot_1D_result(self, solver, exact, axes=axes)
+        axes = self.Visualization.plot_line_1D(self, solver, exact, axes=axes)
         return axes
 
 
@@ -258,7 +258,7 @@ class Lorenz_Exogenous_Input_Inverse(InverseCase):
         print(f"C1 pred: {C1_pred}, C2 pred: {C2_pred}, C3 pred: {C3_pred}")
         print(f"C1 error: {C1_error}, C2 error: {C2_error}, C3 error: {C3_error}")
 
-        axes = self.Visualization.plot_1D_result(solver, exact, axes=axes)
+        axes = self.Visualization.plot_line_1D(solver, exact, axes=axes)
         return axes
 
 
@@ -337,7 +337,7 @@ class Brinkman_Forchheimer_Inverse(InverseCase):
         print(f"v_e pred: {v_e_pred}, K pred: {K_pred}")
         print(f"v_e error: {v_e_error}, K error: {K_error}")
 
-        axes = self.Visualization.plot_1D_result(self, solver, exact, axes=axes)
+        axes = self.Visualization.plot_line_1D(self, solver, exact, axes=axes)
         return axes
 
 
@@ -756,33 +756,6 @@ class Navier_Stokes_Incompressible_Flow_Around_Cylinder_Inverse(InverseCase):
             anchors=ob_xyt,
         )
 
-    # def set_axes(self, axes, dim):
-    #     if dim == 3:
-    #         axes.set_zlim(0, 7)
-    #         axes.set_zlabel("t")
-    #     axes.set_xlim(1.0, 8.0)
-    #     axes.set_ylim(-2.0, 2.0)
-    #     axes.set_xlabel("x1")
-    #     axes.set_ylabel("x2")
-
-    # def plot_data(self, X, axes=None):
-    #     from matplotlib import pyplot as plt
-
-    #     if axes is None:
-    #         fig, axes = plt.subplots()
-    #     self.set_axes(axes, dim=3)
-    #     axes.scatter(X[:, 0], X[:, 1], X[:, 2])
-    #     return axes
-
-    # def plot_heatmap_at_axes(self, X, y, axes, title):
-    #     axes.set_title(title)
-    #     self.set_axes(axes, dim=2)
-    #     return axes.pcolormesh(
-    #         X[:, 0].reshape(1000, 1000),
-    #         X[:, 1].reshape(1000, 1000),
-    #         y.reshape(1000, 1000),
-    #         cmap="rainbow",
-    #     )
 
     def plot_result(self, solver):
         C1_pred = bkd.to_numpy(self.C1)

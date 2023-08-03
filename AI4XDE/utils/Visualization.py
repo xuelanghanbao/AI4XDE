@@ -16,7 +16,7 @@ class Visualization_1D:
                 f(kwargs[i])
         return axes
 
-    def plot_1D_result(self, PDECase, solver, exact=True, **kwargs):
+    def plot_line_1D(self, PDECase, solver, exact=True, **kwargs):
         axes = self.set_axes_1D(**kwargs, title=PDECase.name)
 
         X, y = PDECase.get_testdata()

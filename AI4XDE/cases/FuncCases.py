@@ -1,6 +1,6 @@
 import numpy as np
 import deepxde as dde
-from ..utils import Visualization
+from ..utils import *
 from abc import ABC, abstractmethod
 
 
@@ -14,11 +14,13 @@ class FuncCases(ABC):
         metrics=None,
         loss_weights=None,
         external_trainable_variables=None,
+        visualization=None,
     ):
         self.name = name
         self.metrics = metrics
         self.loss_weights = loss_weights
         self.external_trainable_variables = external_trainable_variables
+        self.Visualization = visualization
 
         self.net = self.gen_net(layer_size, activation, initializer)
         self.data = self.gen_data()
@@ -66,12 +68,6 @@ class FuncCases(ABC):
             self.testdata = self.gen_testdata()
         return self.testdata
 
-    def set_axes(self, axes):
-        pass
-
-    def plot_data(self, X, axes=None):
-        pass
-
     def plot_result(self, solver, colorbar=None):
         pass
 
@@ -95,6 +91,7 @@ class FuncFromFormula(FuncCases):
             activation=activation,
             initializer=initializer,
             metrics=metrics,
+            visualization=Visualization_1D(x_label="x", y_label="y"),
         )
 
     def func(self, x):
@@ -112,8 +109,8 @@ class FuncFromFormula(FuncCases):
         return x, y
 
     def plot_result(self, solver, axes=None, exact=True):
-        fig, axes = Visualization.plot_1D_result(self, solver, axes, exact, "x", "y")
-        return fig, axes
+        axes = self.Visualization.plot_line_1D(self, solver, exact, axes=axes)
+        return axes
 
 
 class FuncFromData(FuncCases):
@@ -138,6 +135,7 @@ class FuncFromData(FuncCases):
             activation=activation,
             initializer=initializer,
             metrics=metrics,
+            visualization=Visualization_1D(x_label="x", y_label="y"),
         )
 
     def gen_data(self):
@@ -154,5 +152,5 @@ class FuncFromData(FuncCases):
         return x, y
 
     def plot_result(self, solver, axes=None, exact=True):
-        fig, axes = Visualization.plot_1D_result(self, solver, axes, exact, "x", "y")
-        return fig, axes
+        axes = self.Visualization.plot_line_1D(self, solver, exact, axes=axes)
+        return axes

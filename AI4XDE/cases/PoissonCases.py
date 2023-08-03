@@ -53,7 +53,7 @@ class PoissonCase1D(PDECases):
         return pde
 
     def plot_result(self, solver, axes=None, exact=True):
-        axes = self.Visualization.plot_1D_result(self, solver, exact, axes=axes)
+        axes = self.Visualization.plot_line_1D(self, solver, exact, axes=axes)
         return axes
 
 

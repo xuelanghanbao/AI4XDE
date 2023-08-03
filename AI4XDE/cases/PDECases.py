@@ -154,7 +154,7 @@ class A_Simple_ODE(PDECases):
         return np.hstack((np.sin(x), np.cos(x)))
 
     def plot_result(self, solver, axes=None, exact=True):
-        axes = self.Visualization.plot_1D_result(self, solver, exact, axes=axes)
+        axes = self.Visualization.plot_line_1D(self, solver, exact, axes=axes)
         return axes
 
 
@@ -261,7 +261,7 @@ class LotkaVolterra(PDECases):
         return x_true, y_true
 
     def plot_result(self, solver, axes=None, exact=True):
-        axes = self.Visualization.plot_1D_result(self, solver, exact, axes=axes)
+        axes = self.Visualization.plot_line_1D(self, solver, exact, axes=axes)
         return axes
 
 
@@ -322,7 +322,7 @@ class SecondOrderODE(PDECases):
         )
 
     def plot_result(self, solver, axes=None, exact=True):
-        axes = self.Visualization.plot_1D_result(self, solver, exact, axes=axes)
+        axes = self.Visualization.plot_line_1D(self, solver, exact, axes=axes)
         return axes
 
 
@@ -504,7 +504,7 @@ class Euler_Beam(PDECases):
         )
 
     def plot_result(self, solver, axes=None, exact=True):
-        axes = self.Visualization.plot_1D_result(self, solver, exact, axes=axes)
+        axes = self.Visualization.plot_line_1D(self, solver, exact, axes=axes)
         return axes
 
 
@@ -2223,7 +2223,7 @@ class IDE(PDECases):
         )
 
     def plot_result(self, solver, axes=None, exact=True):
-        axes = self.Visualization.plot_1D_result(self, solver, exact, axes=axes)
+        axes = self.Visualization.plot_line_1D(self, solver, exact, axes=axes)
         return axes
 
 
@@ -2280,7 +2280,7 @@ class Volterra_IDE(PDECases):
         )
 
     def plot_result(self, solver, axes=None, exact=True):
-        axes = self.Visualization.plot_1D_result(self, solver, exact, axes=axes)
+        axes = self.Visualization.plot_line_1D(self, solver, exact, axes=axes)
         return axes
 
 
@@ -2359,7 +2359,7 @@ class Fractional_Poisson_1D(PDECases):
         return x * (1 - x) * y
 
     def plot_result(self, solver, axes=None, exact=True):
-        axes = self.Visualization.plot_1D_result(self, solver, exact, axes=axes)
+        axes = self.Visualization.plot_line_1D(self, solver, exact, axes=axes)
         return axes
 
 
