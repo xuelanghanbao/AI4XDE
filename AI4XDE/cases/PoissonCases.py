@@ -31,7 +31,7 @@ class PoissonCase1D(PDECases):
             metrics=metrics,
             loss_weights=loss_weights,
             external_trainable_variables=external_trainable_variables,
-            visualization=Visualization_1D(),
+            visualization=Visualization_1D(x_label="x", y_label="y"),
         )
 
     @abstractmethod
@@ -53,10 +53,8 @@ class PoissonCase1D(PDECases):
         return pde
 
     def plot_result(self, solver, axes=None, exact=True):
-        fig, axes = self.Visualization.plot_1D_result(
-            self, solver, axes, exact, "x", "y"
-        )
-        return fig, axes
+        axes = self.Visualization.plot_1D_result(self, solver, exact, axes=axes)
+        return axes
 
 
 class Poisson_1D_Dirichlet(PoissonCase1D):

@@ -3,7 +3,7 @@ import deepxde as dde
 import deepxde.backend as bkd
 from abc import abstractmethod
 from .PDECases import PDECases
-from ..utils import Visualization
+from ..utils import *
 
 
 class InverseCase(PDECases):
@@ -18,6 +18,7 @@ class InverseCase(PDECases):
         initializer="Glorot uniform",
         metrics=None,
         loss_weights=None,
+        visualization=None,
     ):
         super().__init__(
             name=name,
@@ -29,6 +30,7 @@ class InverseCase(PDECases):
             external_trainable_variables=external_trainable_variables,
             metrics=metrics,
             loss_weights=loss_weights,
+            visualization=visualization,
         )
 
     @abstractmethod
@@ -63,6 +65,7 @@ class Lorenz_Inverse(InverseCase):
             layer_size=layer_size,
             activation=activation,
             initializer=initializer,
+            visualization=Visualization_1D(x_label="t", y_label="y"),
         )
 
     def gen_testdata(self):
@@ -131,8 +134,8 @@ class Lorenz_Inverse(InverseCase):
         print(f"C1 pred: {C1_pred}, C2 pred: {C2_pred}, C3 pred: {C3_pred}")
         print(f"C1 error: {C1_error}, C2 error: {C2_error}, C3 error: {C3_error}")
 
-        fig, axes = Visualization.plot_1D_result(self, solver, axes, exact, "t", "y")
-        return fig, axes
+        axes = self.Visualization.plot_1D_result(self, solver, exact, axes=axes)
+        return axes
 
 
 class Lorenz_Exogenous_Input_Inverse(InverseCase):
@@ -157,6 +160,7 @@ class Lorenz_Exogenous_Input_Inverse(InverseCase):
             layer_size=layer_size,
             activation=activation,
             initializer=initializer,
+            visualization=Visualization_1D(x_label="t", y_label="y"),
         )
 
     def gen_testdata(self):
@@ -254,8 +258,8 @@ class Lorenz_Exogenous_Input_Inverse(InverseCase):
         print(f"C1 pred: {C1_pred}, C2 pred: {C2_pred}, C3 pred: {C3_pred}")
         print(f"C1 error: {C1_error}, C2 error: {C2_error}, C3 error: {C3_error}")
 
-        fig, axes = Visualization.plot_1D_result(self, solver, axes, exact, "t", "y")
-        return fig, axes
+        axes = self.Visualization.plot_1D_result(solver, exact, axes=axes)
+        return axes
 
 
 class Brinkman_Forchheimer_Inverse(InverseCase):
@@ -282,6 +286,7 @@ class Brinkman_Forchheimer_Inverse(InverseCase):
             activation=activation,
             initializer=initializer,
             metrics=["l2 relative error"],
+            visualization=Visualization_1D(x_label="t", y_label="y"),
         )
 
     def sol(self, x):
@@ -332,8 +337,8 @@ class Brinkman_Forchheimer_Inverse(InverseCase):
         print(f"v_e pred: {v_e_pred}, K pred: {K_pred}")
         print(f"v_e error: {v_e_error}, K error: {K_error}")
 
-        fig, axes = Visualization.plot_1D_result(self, solver, axes, exact, "t", "y")
-        return fig, axes
+        axes = self.Visualization.plot_1D_result(self, solver, exact, axes=axes)
+        return axes
 
 
 class Diffusion_Inverse(InverseCase):
@@ -355,6 +360,13 @@ class Diffusion_Inverse(InverseCase):
             activation=activation,
             initializer=initializer,
             metrics=["l2 relative error"],
+            visualization=Visualization_2D(
+                x_limit=[0, 1],
+                y_limit=[-1, 1],
+                x_label="t",
+                y_label="x",
+                feature_transform=lambda x: x[:, [1, 0]],
+            ),
         )
 
     def sol(self, x):
@@ -398,30 +410,30 @@ class Diffusion_Inverse(InverseCase):
             solution=self.sol,
         )
 
-    def set_axes(self, axes):
-        axes.set_xlim(0, 1)
-        axes.set_ylim(-1, 1)
-        axes.set_xlabel("t")
-        axes.set_ylabel("x")
+    # def set_axes(self, axes):
+    #     axes.set_xlim(0, 1)
+    #     axes.set_ylim(-1, 1)
+    #     axes.set_xlabel("t")
+    #     axes.set_ylabel("x")
 
-    def plot_data(self, X, axes=None):
-        from matplotlib import pyplot as plt
+    # def plot_data(self, X, axes=None):
+    #     from matplotlib import pyplot as plt
 
-        if axes is None:
-            fig, axes = plt.subplots()
-        self.set_axes(axes)
-        axes.scatter(X[:, 1], X[:, 0])
-        return axes
+    #     if axes is None:
+    #         fig, axes = plt.subplots()
+    #     self.set_axes(axes)
+    #     axes.scatter(X[:, 1], X[:, 0])
+    #     return axes
 
-    def plot_heatmap_at_axes(self, X, y, axes, title):
-        axes.set_title(title)
-        self.set_axes(axes)
-        return axes.pcolormesh(
-            X[:, 1].reshape(1000, 1000),
-            X[:, 0].reshape(1000, 1000),
-            y.reshape(1000, 1000),
-            cmap="rainbow",
-        )
+    # def plot_heatmap_at_axes(self, X, y, axes, title):
+    #     axes.set_title(title)
+    #     self.set_axes(axes)
+    #     return axes.pcolormesh(
+    #         X[:, 1].reshape(1000, 1000),
+    #         X[:, 0].reshape(1000, 1000),
+    #         y.reshape(1000, 1000),
+    #         cmap="rainbow",
+    #     )
 
     def plot_result(self, solver, colorbar=[0, 0, 0]):
         C_pred = bkd.to_numpy(self.C)
@@ -442,13 +454,24 @@ class Diffusion_Inverse(InverseCase):
 
         fig, axes = plt.subplots(1, 3, figsize=(15, 5))
         axs = []
+        shape = [1000, 1000]
         axs.append(
-            self.plot_heatmap_at_axes(X, y, axes=axes[0], title="Exact solution")
+            self.Visualization.plot_heatmap_2D(
+                X, y, shape=shape, axes=axes[0], title="Exact solution"
+            )
         )
-        axs.append(self.plot_heatmap_at_axes(X, model_y, axes[1], title=solver.name))
         axs.append(
-            self.plot_heatmap_at_axes(
-                X, np.abs(model_y - y), axes[2], title="Absolute error"
+            self.Visualization.plot_heatmap_2D(
+                X, model_y, shape=shape, axes=axes[1], title=solver.name
+            )
+        )
+        axs.append(
+            self.Visualization.plot_heatmap_2D(
+                X,
+                np.abs(model_y - y),
+                shape=shape,
+                axes=axes[2],
+                title="Absolute error",
             )
         )
 
@@ -480,6 +503,13 @@ class Diffusion_Reaction_Inverse(InverseCase):
             layer_size=layer_size,
             activation=activation,
             initializer=initializer,
+            visualization=Visualization_2D(
+                x_limit=[0, 10],
+                y_limit=[0, 1],
+                x_label="t",
+                y_label="x",
+                feature_transform=lambda X: X[:, [1, 0]],
+            ),
         )
 
     def gen_testdata(self):
@@ -549,31 +579,6 @@ class Diffusion_Reaction_Inverse(InverseCase):
             anchors=observe_x,
         )
 
-    def set_axes(self, axes):
-        axes.set_xlim(0, 10)
-        axes.set_ylim(0, 1)
-        axes.set_xlabel("t")
-        axes.set_ylabel("x")
-
-    def plot_data(self, X, axes=None):
-        from matplotlib import pyplot as plt
-
-        if axes is None:
-            fig, axes = plt.subplots()
-        self.set_axes(axes)
-        axes.scatter(X[:, 1], X[:, 0])
-        return axes
-
-    def plot_heatmap_at_axes(self, X, y, axes, title):
-        axes.set_title(title)
-        self.set_axes(axes)
-        return axes.pcolormesh(
-            X[:, 1].reshape(201, 201),
-            X[:, 0].reshape(201, 201),
-            y.reshape(201, 201),
-            cmap="rainbow",
-        )
-
     def plot_result(self, solver, colorbar=[0, 0, 0]):
         kf_pred = bkd.to_numpy(self.kf)
         D_pred = bkd.to_numpy(self.D)
@@ -594,13 +599,24 @@ class Diffusion_Reaction_Inverse(InverseCase):
 
         fig, axes = plt.subplots(1, 3, figsize=(15, 5))
         axs = []
+        shape = [201, 201]
         axs.append(
-            self.plot_heatmap_at_axes(X, y, axes=axes[0], title="Exact solution")
+            self.Visualization.plot_heatmap_2D(
+                X, y, shape=shape, axes=axes[0], title="Exact solution"
+            )
         )
-        axs.append(self.plot_heatmap_at_axes(X, model_y, axes[1], title=solver.name))
         axs.append(
-            self.plot_heatmap_at_axes(
-                X, np.abs(model_y - y), axes[2], title="Absolute error"
+            self.Visualization.plot_heatmap_2D(
+                X, model_y, shape=shape, axes=axes[1], title=solver.name
+            )
+        )
+        axs.append(
+            self.Visualization.plot_heatmap_2D(
+                X,
+                np.abs(model_y - y),
+                shape=shape,
+                axes=axes[2],
+                title="Absolute error",
             )
         )
 
@@ -632,6 +648,9 @@ class Navier_Stokes_Incompressible_Flow_Around_Cylinder_Inverse(InverseCase):
             layer_size=layer_size,
             activation=activation,
             initializer=initializer,
+            visualization=Visualization_2D(
+                x_limit=[1, 8], y_limit=[-2, 2], x_label="x1", y_label="x2"
+            ),
         )
 
     def gen_testdata(self, num=7000):
@@ -737,33 +756,33 @@ class Navier_Stokes_Incompressible_Flow_Around_Cylinder_Inverse(InverseCase):
             anchors=ob_xyt,
         )
 
-    def set_axes(self, axes, dim):
-        if dim == 3:
-            axes.set_zlim(0, 7)
-            axes.set_zlabel("t")
-        axes.set_xlim(1.0, 8.0)
-        axes.set_ylim(-2.0, 2.0)
-        axes.set_xlabel("x1")
-        axes.set_ylabel("x2")
+    # def set_axes(self, axes, dim):
+    #     if dim == 3:
+    #         axes.set_zlim(0, 7)
+    #         axes.set_zlabel("t")
+    #     axes.set_xlim(1.0, 8.0)
+    #     axes.set_ylim(-2.0, 2.0)
+    #     axes.set_xlabel("x1")
+    #     axes.set_ylabel("x2")
 
-    def plot_data(self, X, axes=None):
-        from matplotlib import pyplot as plt
+    # def plot_data(self, X, axes=None):
+    #     from matplotlib import pyplot as plt
 
-        if axes is None:
-            fig, axes = plt.subplots()
-        self.set_axes(axes, dim=3)
-        axes.scatter(X[:, 0], X[:, 1], X[:, 2])
-        return axes
+    #     if axes is None:
+    #         fig, axes = plt.subplots()
+    #     self.set_axes(axes, dim=3)
+    #     axes.scatter(X[:, 0], X[:, 1], X[:, 2])
+    #     return axes
 
-    def plot_heatmap_at_axes(self, X, y, axes, title):
-        axes.set_title(title)
-        self.set_axes(axes, dim=2)
-        return axes.pcolormesh(
-            X[:, 0].reshape(1000, 1000),
-            X[:, 1].reshape(1000, 1000),
-            y.reshape(1000, 1000),
-            cmap="rainbow",
-        )
+    # def plot_heatmap_at_axes(self, X, y, axes, title):
+    #     axes.set_title(title)
+    #     self.set_axes(axes, dim=2)
+    #     return axes.pcolormesh(
+    #         X[:, 0].reshape(1000, 1000),
+    #         X[:, 1].reshape(1000, 1000),
+    #         y.reshape(1000, 1000),
+    #         cmap="rainbow",
+    #     )
 
     def plot_result(self, solver):
         C1_pred = bkd.to_numpy(self.C1)
@@ -792,7 +811,9 @@ class Navier_Stokes_Incompressible_Flow_Around_Cylinder_Inverse(InverseCase):
             X = np.hstack((X, np.full((X.shape[0], 1), t)))
             model_y = solver.model.predict(X)[:, 0]
 
-            axs = self.plot_heatmap_at_axes(X, model_y, axes, title=solver.name)
+            axs = self.Visualization.plot_heatmap_2D(
+                X, model_y, shape=[1000, 1000], axes=axes, title=solver.name
+            )
             result_t.append([axs])
 
         ani = animation.ArtistAnimation(fig, result_t)

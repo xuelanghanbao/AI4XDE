@@ -1,5 +1,6 @@
 import numpy as np
 import deepxde as dde
+from ..utils import *
 import deepxde.backend as bkd
 from .PDECases import PDECases
 from abc import abstractmethod
@@ -28,6 +29,13 @@ class WaveCase1D(PDECases):
             layer_size=layer_size,
             activation=activation,
             initializer=initializer,
+            visualization=Visualization_2D(
+                x_limit=time_interval,
+                y_limit=interval,
+                x_label="t",
+                y_label="x",
+                feature_transform=lambda X: X[:, [1, 0]],
+            ),
         )
 
     @abstractmethod
@@ -49,31 +57,6 @@ class WaveCase1D(PDECases):
 
         return pde
 
-    def set_axes(self, axes):
-        axes.set_xlim(self.time_interval[0], self.time_interval[1])
-        axes.set_ylim(self.interval[0], self.interval[1])
-        axes.set_xlabel("t")
-        axes.set_ylabel("x")
-
-    def plot_data(self, X, axes=None):
-        from matplotlib import pyplot as plt
-
-        if axes is None:
-            fig, axes = plt.subplots()
-        self.set_axes(axes)
-        axes.scatter(X[:, 1], X[:, 0])
-        return axes
-
-    def plot_heatmap_at_axes(self, X, y, axes, title):
-        axes.set_title(title)
-        self.set_axes(axes)
-        return axes.pcolormesh(
-            X[:, 1].reshape(1000, 1000),
-            X[:, 0].reshape(1000, 1000),
-            y.reshape(1000, 1000),
-            cmap="rainbow",
-        )
-
     def plot_result(self, solver, colorbar=[0, 0, 0]):
         from matplotlib import pyplot as plt
 
@@ -89,13 +72,24 @@ class WaveCase1D(PDECases):
 
         fig, axes = plt.subplots(1, 3, figsize=(15, 5))
         axs = []
+        shape = [1000, 1000]
         axs.append(
-            self.plot_heatmap_at_axes(X, y, axes=axes[0], title="Exact solution")
+            self.Visualization.plot_heatmap_2D(
+                X, y, shape=shape, axes=axes[0], title="Exact solution"
+            )
         )
-        axs.append(self.plot_heatmap_at_axes(X, model_y, axes[1], title=solver.name))
         axs.append(
-            self.plot_heatmap_at_axes(
-                X, np.abs(model_y - y), axes[2], title="Absolute error"
+            self.Visualization.plot_heatmap_2D(
+                X, model_y, shape=shape, axes=axes[1], title=solver.name
+            )
+        )
+        axs.append(
+            self.Visualization.plot_heatmap_2D(
+                X,
+                np.abs(model_y - y),
+                shape=shape,
+                axes=axes[2],
+                title="Absolute error",
             )
         )
 
@@ -158,7 +152,9 @@ class Wave_1D_STMsFFN(WaveCase1D):
         net = dde.nn.STMsFFN(
             layer_size, activation, initializer, sigmas_x=[1], sigmas_t=[1, 10]
         )
-        net.apply_feature_transform(lambda x: (x - 0.5) * 2 * np.sqrt(3))
+        feature_transform = lambda x: (x - 0.5) * 2 * np.sqrt(3)
+        net.apply_feature_transform(feature_transform)
+        self.Visualization.feature_transform = net.feature_transform = feature_transform
         return net
 
 

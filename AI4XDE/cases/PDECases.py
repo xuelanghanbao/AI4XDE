@@ -117,6 +117,7 @@ class A_Simple_ODE(PDECases):
             activation=activation,
             initializer=initializer,
             metrics=["l2 relative error"],
+            visualization=Visualization_1D(x_label="x", y_label="y"),
         )
 
     def gen_pde(self):
@@ -153,8 +154,8 @@ class A_Simple_ODE(PDECases):
         return np.hstack((np.sin(x), np.cos(x)))
 
     def plot_result(self, solver, axes=None, exact=True):
-        fig, axes = Visualization.plot_1D_result(self, solver, axes, exact, "x", "y")
-        return fig, axes
+        axes = self.Visualization.plot_1D_result(self, solver, exact, axes=axes)
+        return axes
 
 
 class LotkaVolterra(PDECases):
@@ -172,6 +173,7 @@ class LotkaVolterra(PDECases):
             layer_size=layer_size,
             activation=activation,
             initializer=initializer,
+            visualization=Visualization_1D(x_label="t", y_label="population"),
         )
         self.ub = 200
         self.rb = 20
@@ -259,10 +261,8 @@ class LotkaVolterra(PDECases):
         return x_true, y_true
 
     def plot_result(self, solver, axes=None, exact=True):
-        fig, axes = Visualization.plot_1D_result(
-            self, solver, axes, exact, "t", "population"
-        )
-        return fig, axes
+        axes = self.Visualization.plot_1D_result(self, solver, exact, axes=axes)
+        return axes
 
 
 class SecondOrderODE(PDECases):
@@ -282,6 +282,7 @@ class SecondOrderODE(PDECases):
             initializer=initializer,
             metrics=["l2 relative error"],
             loss_weights=[0.01, 1, 1],
+            visualization=Visualization_1D(x_label="t", y_label="y"),
         )
         self.ub = 200
         self.rb = 20
@@ -321,8 +322,8 @@ class SecondOrderODE(PDECases):
         )
 
     def plot_result(self, solver, axes=None, exact=True):
-        fig, axes = Visualization.plot_1D_result(self, solver, axes, exact, "t", "y")
-        return fig, axes
+        axes = self.Visualization.plot_1D_result(self, solver, exact, axes=axes)
+        return axes
 
 
 class Laplace_disk(PDECases):
@@ -341,6 +342,15 @@ class Laplace_disk(PDECases):
             activation=activation,
             initializer=initializer,
             metrics=["l2 relative error"],
+            visualization=Visualization_2D(
+                x_limit=[-1, 1],
+                y_limit=[-1, 1],
+                x_label="x",
+                y_label="y",
+                feature_transform=lambda X: np.array(
+                    [[x[0] * np.cos(x[1]), x[0] * np.sin(x[1])] for x in X]
+                ),
+            ),
         )
 
     def gen_pde(self):
@@ -379,32 +389,6 @@ class Laplace_disk(PDECases):
         net.apply_feature_transform(feature_transform)
         return net
 
-    def set_axes(self, axes):
-        axes.set_xlim(-1, 1)
-        axes.set_ylim(-1, 1)
-        axes.set_xlabel("x1")
-        axes.set_ylabel("x2")
-
-    def plot_data(self, X, axes=None):
-        from matplotlib import pyplot as plt
-
-        if axes is None:
-            fig, axes = plt.subplots()
-        self.set_axes(axes)
-        X = np.array([[x[0] * np.cos(x[1]), x[0] * np.sin(x[1])] for x in X])
-        axes.scatter(X[:, 0], X[:, 1])
-        return axes
-
-    def plot_heatmap_at_axes(self, X, y, axes, title):
-        axes.set_title(title)
-        self.set_axes(axes)
-        return axes.pcolormesh(
-            X[:, 0].reshape(1000, 1000),
-            X[:, 1].reshape(1000, 1000),
-            y.reshape(1000, 1000),
-            cmap="rainbow",
-        )
-
     def plot_result(self, solver, colorbar=[0, 0, 0]):
         from matplotlib import pyplot as plt
 
@@ -415,7 +399,6 @@ class Laplace_disk(PDECases):
                 for x2 in np.linspace(0, 2 * np.pi, 1000)
             ]
         )
-        X_R = np.array([[x[0] * np.cos(x[1]), x[0] * np.sin(x[1])] for x in X])
         y = self.sol(X)
         model_y = solver.model.predict(X)
 
@@ -424,13 +407,24 @@ class Laplace_disk(PDECases):
 
         fig, axes = plt.subplots(1, 3, figsize=(15, 5))
         axs = []
+        shape = [1000, 1000]
         axs.append(
-            self.plot_heatmap_at_axes(X_R, y, axes=axes[0], title="Exact solution")
+            self.Visualization.plot_heatmap_2D(
+                X, y, shape=shape, axes=axes[0], title="Exact solution"
+            )
         )
-        axs.append(self.plot_heatmap_at_axes(X_R, model_y, axes[1], title=solver.name))
         axs.append(
-            self.plot_heatmap_at_axes(
-                X_R, np.abs(model_y - y), axes[2], title="Absolute error"
+            self.Visualization.plot_heatmap_2D(
+                X, model_y, shape=shape, axes=axes[1], title=solver.name
+            )
+        )
+        axs.append(
+            self.Visualization.plot_heatmap_2D(
+                X,
+                np.abs(model_y - y),
+                shape=shape,
+                axes=axes[2],
+                title="Absolute error",
             )
         )
 
@@ -461,6 +455,7 @@ class Euler_Beam(PDECases):
             activation=activation,
             initializer=initializer,
             metrics=["l2 relative error"],
+            visualization=Visualization_1D(x_label="t", y_label="y"),
         )
 
     def ddy(self, x, y):
@@ -509,8 +504,8 @@ class Euler_Beam(PDECases):
         )
 
     def plot_result(self, solver, axes=None, exact=True):
-        fig, axes = Visualization.plot_1D_result(self, solver, axes, exact, "t", "y")
-        return fig, axes
+        axes = self.Visualization.plot_1D_result(self, solver, exact, axes=axes)
+        return axes
 
 
 class Helmholtz(PDECases):
@@ -538,6 +533,9 @@ class Helmholtz(PDECases):
             initializer=initializer,
             metrics=["l2 relative error"],
             loss_weights=loss_weights,
+            visualization=Visualization_2D(
+                x_limit=[0, 1], y_limit=[0, 1], x_label="x1", y_label="x2"
+            ),
         )
 
     def gen_pde(self):
@@ -587,31 +585,6 @@ class Helmholtz(PDECases):
             num_test=nx_test**2,
         )
 
-    def set_axes(self, axes):
-        axes.set_xlim(0, 1)
-        axes.set_ylim(0, 1)
-        axes.set_xlabel("x1")
-        axes.set_ylabel("x2")
-
-    def plot_data(self, X, axes=None):
-        from matplotlib import pyplot as plt
-
-        if axes is None:
-            fig, axes = plt.subplots()
-        self.set_axes(axes)
-        axes.scatter(X[:, 0], X[:, 1])
-        return axes
-
-    def plot_heatmap_at_axes(self, X, y, axes, title):
-        axes.set_title(title)
-        self.set_axes(axes)
-        return axes.pcolormesh(
-            X[:, 0].reshape(1000, 1000),
-            X[:, 1].reshape(1000, 1000),
-            y.reshape(1000, 1000),
-            cmap="rainbow",
-        )
-
     def plot_result(self, solver, colorbar=[0, 0, 0]):
         from matplotlib import pyplot as plt
 
@@ -627,13 +600,24 @@ class Helmholtz(PDECases):
 
         fig, axes = plt.subplots(1, 3, figsize=(15, 5))
         axs = []
+        shape = [1000, 1000]
         axs.append(
-            self.plot_heatmap_at_axes(X, y, axes=axes[0], title="Exact solution")
+            self.Visualization.plot_heatmap_2D(
+                X, y, shape=shape, axes=axes[0], title="Exact solution"
+            )
         )
-        axs.append(self.plot_heatmap_at_axes(X, model_y, axes[1], title=solver.name))
         axs.append(
-            self.plot_heatmap_at_axes(
-                X, np.abs(model_y - y), axes[2], title="Absolute error"
+            self.Visualization.plot_heatmap_2D(
+                X, model_y, shape=shape, axes=axes[1], title=solver.name
+            )
+        )
+        axs.append(
+            self.Visualization.plot_heatmap_2D(
+                X,
+                np.abs(model_y - y),
+                shape=shape,
+                axes=axes[2],
+                title="Absolute error",
             )
         )
 
@@ -677,6 +661,12 @@ class Helmholtz_Hole(PDECases):
             initializer=initializer,
             metrics=["l2 relative error"],
             loss_weights=[1, 10, 100],
+            visualization=Visualization_2D(
+                x_limit=[-length / 2, length / 2],
+                y_limit=[-length / 2, length / 2],
+                x_label="x1",
+                y_label="x2",
+            ),
         )
 
     def get_NumDomain(self, precision_train, precision_test):
@@ -746,31 +736,6 @@ class Helmholtz_Hole(PDECases):
             num_test=self.NumTest,
         )
 
-    def set_axes(self, axes):
-        axes.set_xlim(-1 / 2, 1 / 2)
-        axes.set_ylim(-1 / 2, 1 / 2)
-        axes.set_xlabel("x1")
-        axes.set_ylabel("x2")
-
-    def plot_data(self, X, axes=None):
-        from matplotlib import pyplot as plt
-
-        if axes is None:
-            fig, axes = plt.subplots()
-        self.set_axes(axes)
-        axes.scatter(X[:, 0], X[:, 1])
-        return axes
-
-    def plot_heatmap_at_axes(self, X, y, axes, title):
-        axes.set_title(title)
-        self.set_axes(axes)
-        return axes.pcolormesh(
-            X[:, 0].reshape(1000, 1000),
-            X[:, 1].reshape(1000, 1000),
-            y.reshape(1000, 1000),
-            cmap="rainbow",
-        )
-
     def plot_result(self, solver, colorbar=[0, 0, 0]):
         from matplotlib import pyplot as plt
 
@@ -788,13 +753,24 @@ class Helmholtz_Hole(PDECases):
 
         fig, axes = plt.subplots(1, 3, figsize=(15, 5))
         axs = []
+        shape = [1000, 1000]
         axs.append(
-            self.plot_heatmap_at_axes(X, y, axes=axes[0], title="Exact solution")
+            self.Visualization.plot_heatmap_2D(
+                X, y, shape=shape, axes=axes[0], title="Exact solution"
+            )
         )
-        axs.append(self.plot_heatmap_at_axes(X, model_y, axes[1], title=solver.name))
         axs.append(
-            self.plot_heatmap_at_axes(
-                X, np.abs(model_y - y), axes[2], title="Absolute error"
+            self.Visualization.plot_heatmap_2D(
+                X, model_y, shape=shape, axes=axes[1], title=solver.name
+            )
+        )
+        axs.append(
+            self.Visualization.plot_heatmap_2D(
+                X,
+                np.abs(model_y - y),
+                shape=shape,
+                axes=axes[2],
+                title="Absolute error",
             )
         )
 
@@ -833,6 +809,12 @@ class Helmholtz_Sound_hard_Absorbing(PDECases):
             activation=activation,
             initializer=initializer,
             metrics=["l2 relative error"],
+            visualization=Visualization_2D(
+                x_limit=[-self.length / 2, self.length / 2],
+                y_limit=[-self.length / 2, self.length / 2],
+                x_label="x1",
+                y_label="x2",
+            ),
         )
 
     def get_NumDomain(self):
@@ -942,31 +924,6 @@ class Helmholtz_Sound_hard_Absorbing(PDECases):
             num_test=self.NumTest,
         )
 
-    def set_axes(self, axes):
-        axes.set_xlim(-self.length / 2, self.length / 2)
-        axes.set_ylim(-self.length / 2, self.length / 2)
-        axes.set_xlabel("x1")
-        axes.set_ylabel("x2")
-
-    def plot_data(self, X, axes=None):
-        from matplotlib import pyplot as plt
-
-        if axes is None:
-            fig, axes = plt.subplots()
-        self.set_axes(axes)
-        axes.scatter(X[:, 0], X[:, 1])
-        return axes
-
-    def plot_heatmap_at_axes(self, X, y, axes, title):
-        axes.set_title(title)
-        self.set_axes(axes)
-        return axes.pcolormesh(
-            X[:, 0].reshape(1000, 1000),
-            X[:, 1].reshape(1000, 1000),
-            y.reshape(1000, 1000),
-            cmap="rainbow",
-        )
-
     def plot_result(self, solver, colorbar=[0, 0, 0]):
         from matplotlib import pyplot as plt
 
@@ -984,13 +941,24 @@ class Helmholtz_Sound_hard_Absorbing(PDECases):
 
         fig, axes = plt.subplots(1, 3, figsize=(15, 5))
         axs = []
+        shape = [1000, 1000]
         axs.append(
-            self.plot_heatmap_at_axes(X, y, axes=axes[0], title="Exact solution")
+            self.Visualization.plot_heatmap_2D(
+                X, y, shape=shape, axes=axes[0], title="Exact solution"
+            )
         )
-        axs.append(self.plot_heatmap_at_axes(X, model_y, axes[1], title=solver.name))
         axs.append(
-            self.plot_heatmap_at_axes(
-                X, np.abs(model_y - y), axes[2], title="Absolute error"
+            self.Visualization.plot_heatmap_2D(
+                X, model_y, shape=shape, axes=axes[1], title=solver.name
+            )
+        )
+        axs.append(
+            self.Visualization.plot_heatmap_2D(
+                X,
+                np.abs(model_y - y),
+                shape=shape,
+                axes=axes[2],
+                title="Absolute error",
             )
         )
 
@@ -1019,6 +987,12 @@ class Kovasznay_Flow(PDECases):
             layer_size=layer_size,
             activation=activation,
             initializer=initializer,
+            visualization=Visualization_2D(
+                x_limit=[-0.5, 1],
+                y_limit=[-0.5, 1.5],
+                x_label="x1",
+                y_label="x2",
+            ),
         )
 
     def gen_pde(self):
@@ -1070,20 +1044,6 @@ class Kovasznay_Flow(PDECases):
         return dde.geometry.Rectangle(xmin=[-0.5, -0.5], xmax=[1, 1.5])
 
     def gen_data(self):
-        def u_func(x):
-            return 1 - np.exp(self.l * x[:, 0:1]) * np.cos(2 * np.pi * x[:, 1:2])
-
-        def v_func(x):
-            return (
-                self.l
-                / (2 * np.pi)
-                * np.exp(self.l * x[:, 0:1])
-                * np.sin(2 * np.pi * x[:, 1:2])
-            )
-
-        def p_func(x):
-            return 1 / 2 * (1 - np.exp(2 * self.l * x[:, 0:1]))
-
         def boundary_outflow(x, on_boundary):
             return on_boundary and np.isclose(x[0], 1)
 
@@ -1112,31 +1072,6 @@ class Kovasznay_Flow(PDECases):
             num_test=100000,
         )
 
-    def set_axes(self, axes):
-        axes.set_xlim(-0.5, 1)
-        axes.set_ylim(-0.5, 1.5)
-        axes.set_xlabel("x1")
-        axes.set_ylabel("x2")
-
-    def plot_data(self, X, axes=None):
-        from matplotlib import pyplot as plt
-
-        if axes is None:
-            fig, axes = plt.subplots()
-        self.set_axes(axes)
-        axes.scatter(X[:, 0], X[:, 1])
-        return axes
-
-    def plot_heatmap_at_axes(self, X, y, axes, title):
-        axes.set_title(title)
-        self.set_axes(axes)
-        return axes.pcolormesh(
-            X[:, 0].reshape(1000, 1000),
-            X[:, 1].reshape(1000, 1000),
-            y.reshape(1000, 1000),
-            cmap="rainbow",
-        )
-
     def plot_result(self, solver, colorbar=[0, 0, 0]):
         from matplotlib import pyplot as plt
 
@@ -1154,13 +1089,24 @@ class Kovasznay_Flow(PDECases):
 
         fig, axes = plt.subplots(1, 3, figsize=(15, 5))
         axs = []
+        shape = [1000, 1000]
         axs.append(
-            self.plot_heatmap_at_axes(X, y, axes=axes[0], title="Exact solution")
+            self.Visualization.plot_heatmap_2D(
+                X, y, shape=shape, axes=axes[0], title="Exact solution"
+            )
         )
-        axs.append(self.plot_heatmap_at_axes(X, model_y, axes[1], title=solver.name))
         axs.append(
-            self.plot_heatmap_at_axes(
-                X, np.abs(model_y - y), axes[2], title="Absolute error"
+            self.Visualization.plot_heatmap_2D(
+                X, model_y, shape=shape, axes=axes[1], title=solver.name
+            )
+        )
+        axs.append(
+            self.Visualization.plot_heatmap_2D(
+                X,
+                np.abs(model_y - y),
+                shape=shape,
+                axes=axes[2],
+                title="Absolute error",
             )
         )
 
@@ -1186,6 +1132,13 @@ class Burgers(PDECases):
             layer_size=layer_size,
             activation=activation,
             initializer=initializer,
+            visualization=Visualization_2D(
+                x_limit=[0, 1],
+                y_limit=[-1, 1],
+                x_label="t",
+                y_label="x",
+                feature_transform=lambda X: X[:, [1, 0]],
+            ),
         )
 
     def gen_pde(self):
@@ -1228,31 +1181,6 @@ class Burgers(PDECases):
     def output_transform(self, x, y):
         return -bkd.sin(np.pi * x[:, 0:1]) + (1 - x[:, 0:1] ** 2) * (x[:, 1:]) * y
 
-    def set_axes(self, axes):
-        axes.set_xlim(0, 1)
-        axes.set_ylim(-1, 1)
-        axes.set_xlabel("t")
-        axes.set_ylabel("x")
-
-    def plot_data(self, X, axes=None):
-        from matplotlib import pyplot as plt
-
-        if axes is None:
-            fig, axes = plt.subplots()
-        self.set_axes(axes)
-        axes.scatter(X[:, 1], X[:, 0])
-        return axes
-
-    def plot_heatmap_at_axes(self, X, y, axes, title):
-        axes.set_title(title)
-        self.set_axes(axes)
-        return axes.pcolormesh(
-            X[:, 1].reshape(100, 256),
-            X[:, 0].reshape(100, 256),
-            y.reshape(100, 256),
-            cmap="rainbow",
-        )
-
     def plot_result(self, solver, colorbar=[0, 0, 0]):
         from matplotlib import pyplot as plt
 
@@ -1261,13 +1189,24 @@ class Burgers(PDECases):
 
         fig, axes = plt.subplots(1, 3, figsize=(15, 5))
         axs = []
+        shape = [100, 256]
         axs.append(
-            self.plot_heatmap_at_axes(X, y, axes=axes[0], title="Exact solution")
+            self.Visualization.plot_heatmap_2D(
+                X, y, shape=shape, axes=axes[0], title="Exact solution"
+            )
         )
-        axs.append(self.plot_heatmap_at_axes(X, model_y, axes[1], title=solver.name))
         axs.append(
-            self.plot_heatmap_at_axes(
-                X, np.abs(model_y - y), axes[2], title="Absolute error"
+            self.Visualization.plot_heatmap_2D(
+                X, model_y, shape=shape, axes=axes[1], title=solver.name
+            )
+        )
+        axs.append(
+            self.Visualization.plot_heatmap_2D(
+                X,
+                np.abs(model_y - y),
+                shape=shape,
+                axes=axes[2],
+                title="Absolute error",
             )
         )
 
@@ -1296,6 +1235,13 @@ class Heat(PDECases):
             layer_size=layer_size,
             activation=activation,
             initializer=initializer,
+            visualization=Visualization_2D(
+                x_limit=[0, 1],
+                y_limit=[0, self.L],
+                x_label="t",
+                y_label="x",
+                feature_transform=lambda X: X[:, [1, 0]],
+            ),
         )
 
     def gen_pde(self):
@@ -1338,31 +1284,6 @@ class Heat(PDECases):
             num_initial=160,
         )
 
-    def set_axes(self, axes):
-        axes.set_xlim(0, 1)
-        axes.set_ylim(0, self.L)
-        axes.set_xlabel("t")
-        axes.set_ylabel("x")
-
-    def plot_data(self, X, axes=None):
-        from matplotlib import pyplot as plt
-
-        if axes is None:
-            fig, axes = plt.subplots()
-        self.set_axes(axes)
-        axes.scatter(X[:, 1], X[:, 0])
-        return axes
-
-    def plot_heatmap_at_axes(self, X, y, axes, title):
-        axes.set_title(title)
-        self.set_axes(axes)
-        return axes.pcolormesh(
-            X[:, 1].reshape(1000, 1000),
-            X[:, 0].reshape(1000, 1000),
-            y.reshape(1000, 1000),
-            cmap="rainbow",
-        )
-
     def plot_result(self, solver, colorbar=[0, 0, 0]):
         from matplotlib import pyplot as plt
 
@@ -1378,13 +1299,24 @@ class Heat(PDECases):
 
         fig, axes = plt.subplots(1, 3, figsize=(15, 5))
         axs = []
+        shape = [1000, 1000]
         axs.append(
-            self.plot_heatmap_at_axes(X, y, axes=axes[0], title="Exact solution")
+            self.Visualization.plot_heatmap_2D(
+                X, y, shape=shape, axes=axes[0], title="Exact solution"
+            )
         )
-        axs.append(self.plot_heatmap_at_axes(X, model_y, axes[1], title=solver.name))
         axs.append(
-            self.plot_heatmap_at_axes(
-                X, np.abs(model_y - y), axes[2], title="Absolute error"
+            self.Visualization.plot_heatmap_2D(
+                X, model_y, shape=shape, axes=axes[1], title=solver.name
+            )
+        )
+        axs.append(
+            self.Visualization.plot_heatmap_2D(
+                X,
+                np.abs(model_y - y),
+                shape=shape,
+                axes=axes[2],
+                title="Absolute error",
             )
         )
 
@@ -1412,6 +1344,13 @@ class Diffusion(PDECases):
             activation=activation,
             initializer=initializer,
             metrics=["l2 relative error"],
+            visualization=Visualization_2D(
+                x_limit=[0, 1],
+                y_limit=[-1, 1],
+                x_label="t",
+                y_label="x",
+                feature_transform=lambda X: X[:, [1, 0]],
+            ),
         )
 
     def gen_pde(self):
@@ -1466,31 +1405,6 @@ class Diffusion(PDECases):
     def output_transform(self, x, y):
         return bkd.sin(np.pi * x[:, 0:1]) + (1 - x[:, 0:1] ** 2) * (x[:, 1:]) * y
 
-    def set_axes(self, axes):
-        axes.set_xlim(0, 1)
-        axes.set_ylim(-1, 1)
-        axes.set_xlabel("t")
-        axes.set_ylabel("x")
-
-    def plot_data(self, X, axes=None):
-        from matplotlib import pyplot as plt
-
-        if axes is None:
-            fig, axes = plt.subplots()
-        self.set_axes(axes)
-        axes.scatter(X[:, 1], X[:, 0])
-        return axes
-
-    def plot_heatmap_at_axes(self, X, y, axes, title):
-        axes.set_title(title)
-        self.set_axes(axes)
-        return axes.pcolormesh(
-            X[:, 1].reshape(1000, 1000),
-            X[:, 0].reshape(1000, 1000),
-            y.reshape(1000, 1000),
-            cmap="rainbow",
-        )
-
     def plot_result(self, solver, colorbar=[0, 0, 0]):
         from matplotlib import pyplot as plt
 
@@ -1502,13 +1416,24 @@ class Diffusion(PDECases):
 
         fig, axes = plt.subplots(1, 3, figsize=(15, 5))
         axs = []
+        shape = [1000, 1000]
         axs.append(
-            self.plot_heatmap_at_axes(X, y, axes=axes[0], title="Exact solution")
+            self.Visualization.plot_heatmap_2D(
+                X, y, shape=shape, axes=axes[0], title="Exact solution"
+            )
         )
-        axs.append(self.plot_heatmap_at_axes(X, model_y, axes[1], title=solver.name))
         axs.append(
-            self.plot_heatmap_at_axes(
-                X, np.abs(model_y - y), axes[2], title="Absolute error"
+            self.Visualization.plot_heatmap_2D(
+                X, model_y, shape=shape, axes=axes[1], title=solver.name
+            )
+        )
+        axs.append(
+            self.Visualization.plot_heatmap_2D(
+                X,
+                np.abs(model_y - y),
+                shape=shape,
+                axes=axes[2],
+                title="Absolute error",
             )
         )
 
@@ -1535,6 +1460,13 @@ class Diffusion_reaction(PDECases):
             activation=activation,
             initializer=initializer,
             metrics=["l2 relative error"],
+            visualization=Visualization_2D(
+                x_limit=[0, 0.99],
+                y_limit=[-1, 1],
+                x_label="t",
+                y_label="x",
+                feature_transform=lambda X: X[:, [1, 0]],
+            ),
         )
 
     def gen_pde(self):
@@ -1590,31 +1522,6 @@ class Diffusion_reaction(PDECases):
             solution=self.sol,
         )
 
-    def set_axes(self, axes):
-        axes.set_xlim(0, 0.99)
-        axes.set_ylim(-1, 1)
-        axes.set_xlabel("t")
-        axes.set_ylabel("x")
-
-    def plot_data(self, X, axes=None):
-        from matplotlib import pyplot as plt
-
-        if axes is None:
-            fig, axes = plt.subplots()
-        self.set_axes(axes)
-        axes.scatter(X[:, 1], X[:, 0])
-        return axes
-
-    def plot_heatmap_at_axes(self, X, y, axes, title):
-        axes.set_title(title)
-        self.set_axes(axes)
-        return axes.pcolormesh(
-            X[:, 1].reshape(1000, 1000),
-            X[:, 0].reshape(1000, 1000),
-            y.reshape(1000, 1000),
-            cmap="rainbow",
-        )
-
     def plot_result(self, solver, colorbar=[0, 0, 0]):
         from matplotlib import pyplot as plt
 
@@ -1630,13 +1537,24 @@ class Diffusion_reaction(PDECases):
 
         fig, axes = plt.subplots(1, 3, figsize=(15, 5))
         axs = []
+        shape = [1000, 1000]
         axs.append(
-            self.plot_heatmap_at_axes(X, y, axes=axes[0], title="Exact solution")
+            self.Visualization.plot_heatmap_2D(
+                X, y, shape=shape, axes=axes[0], title="Exact solution"
+            )
         )
-        axs.append(self.plot_heatmap_at_axes(X, model_y, axes[1], title=solver.name))
         axs.append(
-            self.plot_heatmap_at_axes(
-                X, np.abs(model_y - y), axes[2], title="Absolute error"
+            self.Visualization.plot_heatmap_2D(
+                X, model_y, shape=shape, axes=axes[1], title=solver.name
+            )
+        )
+        axs.append(
+            self.Visualization.plot_heatmap_2D(
+                X,
+                np.abs(model_y - y),
+                shape=shape,
+                axes=axes[2],
+                title="Absolute error",
             )
         )
 
@@ -1666,6 +1584,13 @@ class AllenCahn(PDECases):
             layer_size=layer_size,
             activation=activation,
             initializer=initializer,
+            visualization=Visualization_2D(
+                x_limit=[0, 1],
+                y_limit=[-1, 1],
+                x_label="t",
+                y_label="x",
+                feature_transform=lambda X: X[:, [1, 0]],
+            ),
         )
 
     def gen_pde(self):
@@ -1716,31 +1641,6 @@ class AllenCahn(PDECases):
             np.pi * x_in
         )
 
-    def set_axes(self, axes):
-        axes.set_xlim(0, 1)
-        axes.set_ylim(-1, 1)
-        axes.set_xlabel("t")
-        axes.set_ylabel("x")
-
-    def plot_data(self, X, axes=None):
-        from matplotlib import pyplot as plt
-
-        if axes is None:
-            fig, axes = plt.subplots()
-        self.set_axes(axes)
-        axes.scatter(X[:, 1], X[:, 0])
-        return axes
-
-    def plot_heatmap_at_axes(self, X, y, axes, title):
-        axes.set_title(title)
-        self.set_axes(axes)
-        return axes.pcolormesh(
-            X[:, 1].reshape(101, 201),
-            X[:, 0].reshape(101, 201),
-            y.reshape(101, 201),
-            cmap="rainbow",
-        )
-
     def plot_result(self, solver, colorbar=[0, 0, 0]):
         from matplotlib import pyplot as plt
 
@@ -1749,13 +1649,24 @@ class AllenCahn(PDECases):
 
         fig, axes = plt.subplots(1, 3, figsize=(15, 5))
         axs = []
+        shape = [101, 201]
         axs.append(
-            self.plot_heatmap_at_axes(X, y, axes=axes[0], title="Exact solution")
+            self.Visualization.plot_heatmap_2D(
+                X, y, shape=shape, axes=axes[0], title="Exact solution"
+            )
         )
-        axs.append(self.plot_heatmap_at_axes(X, model_y, axes[1], title=solver.name))
         axs.append(
-            self.plot_heatmap_at_axes(
-                X, np.abs(model_y - y), axes[2], title="Absolute error"
+            self.Visualization.plot_heatmap_2D(
+                X, model_y, shape=shape, axes=axes[1], title=solver.name
+            )
+        )
+        axs.append(
+            self.Visualization.plot_heatmap_2D(
+                X,
+                np.abs(model_y - y),
+                shape=shape,
+                axes=axes[2],
+                title="Absolute error",
             )
         )
 
@@ -1785,6 +1696,13 @@ class Klein_Gordon(PDECases):
             activation=activation,
             initializer=initializer,
             metrics=["l2 relative error"],
+            visualization=Visualization_2D(
+                x_limit=[0, 10],
+                y_limit=[-1, 1],
+                x_label="t",
+                y_label="x",
+                feature_transform=lambda X: X[:, [1, 0]],
+            ),
         )
 
     def gen_pde(self):
@@ -1833,31 +1751,6 @@ class Klein_Gordon(PDECases):
             solution=self.sol,
         )
 
-    def set_axes(self, axes):
-        axes.set_xlim(0, 10)
-        axes.set_ylim(-1, 1)
-        axes.set_xlabel("t")
-        axes.set_ylabel("x")
-
-    def plot_data(self, X, axes=None):
-        from matplotlib import pyplot as plt
-
-        if axes is None:
-            fig, axes = plt.subplots()
-        self.set_axes(axes)
-        axes.scatter(X[:, 1], X[:, 0])
-        return axes
-
-    def plot_heatmap_at_axes(self, X, y, axes, title):
-        axes.set_title(title)
-        self.set_axes(axes)
-        return axes.pcolormesh(
-            X[:, 1].reshape(1000, 1000),
-            X[:, 0].reshape(1000, 1000),
-            y.reshape(1000, 1000),
-            cmap="rainbow",
-        )
-
     def plot_result(self, solver, colorbar=[0, 0, 0]):
         from matplotlib import pyplot as plt
 
@@ -1869,13 +1762,24 @@ class Klein_Gordon(PDECases):
 
         fig, axes = plt.subplots(1, 3, figsize=(15, 5))
         axs = []
+        shape = [1000, 1000]
         axs.append(
-            self.plot_heatmap_at_axes(X, y, axes=axes[0], title="Exact solution")
+            self.Visualization.plot_heatmap_2D(
+                X, y, shape=shape, axes=axes[0], title="Exact solution"
+            )
         )
-        axs.append(self.plot_heatmap_at_axes(X, model_y, axes[1], title=solver.name))
         axs.append(
-            self.plot_heatmap_at_axes(
-                X, np.abs(model_y - y), axes[2], title="Absolute error"
+            self.Visualization.plot_heatmap_2D(
+                X, model_y, shape=shape, axes=axes[1], title=solver.name
+            )
+        )
+        axs.append(
+            self.Visualization.plot_heatmap_2D(
+                X,
+                np.abs(model_y - y),
+                shape=shape,
+                axes=axes[2],
+                title="Absolute error",
             )
         )
 
@@ -1904,6 +1808,13 @@ class Beltrami_flow(PDECases):
             layer_size=layer_size,
             activation=activation,
             initializer=initializer,
+            visualization=Visualization_2D(
+                x_limit=[0, 1],
+                y_limit=[-1, 1],
+                x_label="t",
+                y_label="x",
+                feature_transform=lambda X: X[:, [-1, 2]],
+            ),
         )
 
     def gen_pde(self):
@@ -2066,31 +1977,6 @@ class Beltrami_flow(PDECases):
             num_test=10000,
         )
 
-    def set_axes(self, axes):
-        axes.set_xlim(0, 1)
-        axes.set_ylim(-1, 1)
-        axes.set_xlabel("t")
-        axes.set_ylabel("x")
-
-    def plot_data(self, X, axes=None):
-        from matplotlib import pyplot as plt
-
-        if axes is None:
-            fig, axes = plt.subplots()
-        self.set_axes(axes)
-        axes.scatter(X[:, -1], X[:, 2])
-        return axes
-
-    def plot_heatmap_at_axes(self, X, y, axes, title):
-        axes.set_title(title)
-        self.set_axes(axes)
-        return axes.pcolormesh(
-            X[:, -1].reshape(1000, 1000),
-            X[:, 2].reshape(1000, 1000),
-            y.reshape(1000, 1000),
-            cmap="rainbow",
-        )
-
     def plot_result(self, solver, colorbar=[0, 0, 0]):
         from matplotlib import pyplot as plt
 
@@ -2106,13 +1992,24 @@ class Beltrami_flow(PDECases):
 
         fig, axes = plt.subplots(1, 3, figsize=(15, 5))
         axs = []
+        shape = [1000, 1000]
         axs.append(
-            self.plot_heatmap_at_axes(X, y, axes=axes[0], title="Exact solution")
+            self.Visualization.plot_heatmap_2D(
+                X, y, shape=shape, axes=axes[0], title="Exact solution"
+            )
         )
-        axs.append(self.plot_heatmap_at_axes(X, model_y, axes[1], title=solver.name))
         axs.append(
-            self.plot_heatmap_at_axes(
-                X, np.abs(model_y - y), axes[2], title="Absolute error"
+            self.Visualization.plot_heatmap_2D(
+                X, model_y, shape=shape, axes=axes[1], title=solver.name
+            )
+        )
+        axs.append(
+            self.Visualization.plot_heatmap_2D(
+                X,
+                np.abs(model_y - y),
+                shape=shape,
+                axes=axes[2],
+                title="Absolute error",
             )
         )
 
@@ -2138,6 +2035,13 @@ class Schrodinger(PDECases):
             layer_size=layer_size,
             activation=activation,
             initializer=initializer,
+            visualization=Visualization_2D(
+                x_limit=[0, np.pi / 2],
+                y_limit=[-5, 5],
+                x_label="t",
+                y_label="x",
+                feature_transform=lambda X: X[:, [1, 0]],
+            ),
         )
 
     def gen_pde(self):
@@ -2233,31 +2137,6 @@ class Schrodinger(PDECases):
             train_distribution="pseudo",
         )
 
-    def set_axes(self, axes):
-        axes.set_xlim(0, np.pi / 2)
-        axes.set_ylim(-5, 5)
-        axes.set_xlabel("t")
-        axes.set_ylabel("x")
-
-    def plot_data(self, X, axes=None):
-        from matplotlib import pyplot as plt
-
-        if axes is None:
-            fig, axes = plt.subplots()
-        self.set_axes(axes)
-        axes.scatter(X[:, 1], X[:, 0])
-        return axes
-
-    def plot_heatmap_at_axes(self, X, y, axes, title):
-        axes.set_title(title)
-        self.set_axes(axes)
-        return axes.pcolormesh(
-            X[:, 1].reshape(201, 256),
-            X[:, 0].reshape(201, 256),
-            y.reshape(201, 256),
-            cmap="rainbow",
-        )
-
     def plot_result(self, solver, colorbar=[0, 0, 0]):
         from matplotlib import pyplot as plt
 
@@ -2269,13 +2148,24 @@ class Schrodinger(PDECases):
 
         fig, axes = plt.subplots(1, 3, figsize=(15, 5))
         axs = []
+        shape = [201, 256]
         axs.append(
-            self.plot_heatmap_at_axes(X, y, axes=axes[0], title="Exact solution")
+            self.Visualization.plot_heatmap_2D(
+                X, y, shape=shape, axes=axes[0], title="Exact solution"
+            )
         )
-        axs.append(self.plot_heatmap_at_axes(X, model_y, axes[1], title=solver.name))
         axs.append(
-            self.plot_heatmap_at_axes(
-                X, np.abs(model_y - y), axes[2], title="Absolute error"
+            self.Visualization.plot_heatmap_2D(
+                X, model_y, shape=shape, axes=axes[1], title=solver.name
+            )
+        )
+        axs.append(
+            self.Visualization.plot_heatmap_2D(
+                X,
+                np.abs(model_y - y),
+                shape=shape,
+                axes=axes[2],
+                title="Absolute error",
             )
         )
 
@@ -2301,6 +2191,7 @@ class IDE(PDECases):
             layer_size=layer_size,
             activation=activation,
             initializer=initializer,
+            visualization=Visualization_1D(x_label="t", y_label="y"),
         )
 
     def gen_pde(self):
@@ -2332,8 +2223,8 @@ class IDE(PDECases):
         )
 
     def plot_result(self, solver, axes=None, exact=True):
-        fig, axes = Visualization.plot_result(self, solver, axes, exact, "t", "y")
-        return fig, axes
+        axes = self.Visualization.plot_1D_result(self, solver, exact, axes=axes)
+        return axes
 
 
 class Volterra_IDE(PDECases):
@@ -2351,6 +2242,7 @@ class Volterra_IDE(PDECases):
             layer_size=layer_size,
             activation=activation,
             initializer=initializer,
+            visualization=Visualization_1D(x_label="t", y_label="y"),
         )
 
     def gen_pde(self):
@@ -2388,8 +2280,8 @@ class Volterra_IDE(PDECases):
         )
 
     def plot_result(self, solver, axes=None, exact=True):
-        fig, axes = Visualization.plot_result(self, solver, axes, exact, "t", "y")
-        return fig, axes
+        axes = self.Visualization.plot_1D_result(self, solver, exact, axes=axes)
+        return axes
 
 
 class Fractional_Poisson_1D(PDECases):
@@ -2408,6 +2300,7 @@ class Fractional_Poisson_1D(PDECases):
             layer_size=layer_size,
             activation=activation,
             initializer=initializer,
+            visualization=Visualization_1D(x_label="x", y_label="y"),
         )
 
     def gen_pde(self):
@@ -2466,8 +2359,8 @@ class Fractional_Poisson_1D(PDECases):
         return x * (1 - x) * y
 
     def plot_result(self, solver, axes=None, exact=True):
-        fig, axes = Visualization.plot_result(self, solver, axes, exact, "x", "y")
-        return fig, axes
+        axes = self.Visualization.plot_1D_result(self, solver, exact, axes=axes)
+        return axes
 
 
 class Fractional_Poisson_2D(PDECases):
@@ -2486,6 +2379,9 @@ class Fractional_Poisson_2D(PDECases):
             layer_size=layer_size,
             activation=activation,
             initializer=initializer,
+            visualization=Visualization_2D(
+                x_limit=[-1, 1], y_limit=[-1, 1], x_label="x1", y_label="x2"
+            ),
         )
 
     def gen_pde(self):
@@ -2547,31 +2443,6 @@ class Fractional_Poisson_2D(PDECases):
             1 - bkd.from_numpy(np.sum(bkd.to_numpy(x) ** 2, axis=1, keepdims=True))
         ) * y
 
-    def set_axes(self, axes):
-        axes.set_xlim(-1, 1)
-        axes.set_ylim(-1, 1)
-        axes.set_xlabel("x1")
-        axes.set_ylabel("x2")
-
-    def plot_data(self, X, axes=None):
-        from matplotlib import pyplot as plt
-
-        if axes is None:
-            fig, axes = plt.subplots()
-        self.set_axes(axes)
-        axes.scatter(X[:, 0], X[:, 1])
-        return axes
-
-    def plot_heatmap_at_axes(self, X, y, axes, title):
-        axes.set_title(title)
-        self.set_axes(axes)
-        return axes.pcolormesh(
-            X[:, 0].reshape(1000, 1000),
-            X[:, 1].reshape(1000, 1000),
-            y.reshape(1000, 1000),
-            cmap="rainbow",
-        )
-
     def plot_result(self, solver, colorbar=[0, 0, 0]):
         from matplotlib import pyplot as plt
 
@@ -2589,13 +2460,24 @@ class Fractional_Poisson_2D(PDECases):
 
         fig, axes = plt.subplots(1, 3, figsize=(15, 5))
         axs = []
+        shape = [1000, 1000]
         axs.append(
-            self.plot_heatmap_at_axes(X, y, axes=axes[0], title="Exact solution")
+            self.Visualization.plot_heatmap_2D(
+                X, y, shape=shape, axes=axes[0], title="Exact solution"
+            )
         )
-        axs.append(self.plot_heatmap_at_axes(X, model_y, axes[1], title=solver.name))
         axs.append(
-            self.plot_heatmap_at_axes(
-                X, np.abs(model_y - y), axes[2], title="Absolute error"
+            self.Visualization.plot_heatmap_2D(
+                X, model_y, shape=shape, axes=axes[1], title=solver.name
+            )
+        )
+        axs.append(
+            self.Visualization.plot_heatmap_2D(
+                X,
+                np.abs(model_y - y),
+                shape=shape,
+                axes=axes[2],
+                title="Absolute error",
             )
         )
 
@@ -2622,6 +2504,13 @@ class Fractional_Poisson_3D(PDECases):
             layer_size=layer_size,
             activation=activation,
             initializer=initializer,
+            visualization=Visualization_2D(
+                x_limit=[-1, 1],
+                y_limit=[-1, 1],
+                x_label="x1",
+                y_label="x2",
+                feature_transform=lambda X: X[:, [0, 1]],
+            ),
         )
 
     def gen_pde(self):
@@ -2684,30 +2573,30 @@ class Fractional_Poisson_3D(PDECases):
             1 - bkd.from_numpy(np.sum(bkd.to_numpy(x) ** 2, axis=1, keepdims=True))
         ) * y
 
-    def set_axes(self, axes):
-        axes.set_xlim(-1, 1)
-        axes.set_ylim(-1, 1)
-        axes.set_xlabel("x1")
-        axes.set_ylabel("x2")
+    # def set_axes(self, axes):
+    #     axes.set_xlim(-1, 1)
+    #     axes.set_ylim(-1, 1)
+    #     axes.set_xlabel("x1")
+    #     axes.set_ylabel("x2")
 
-    def plot_data(self, X, axes=None):
-        from matplotlib import pyplot as plt
+    # def plot_data(self, X, axes=None):
+    #     from matplotlib import pyplot as plt
 
-        if axes is None:
-            fig, axes = plt.subplots()
-        self.set_axes(axes)
-        axes.scatter(X[:, 0], X[:, 1])
-        return axes
+    #     if axes is None:
+    #         fig, axes = plt.subplots()
+    #     self.set_axes(axes)
+    #     axes.scatter(X[:, 0], X[:, 1])
+    #     return axes
 
-    def plot_heatmap_at_axes(self, X, y, axes, title):
-        axes.set_title(title)
-        self.set_axes(axes)
-        return axes.pcolormesh(
-            X[:, 0].reshape(1000, 1000),
-            X[:, 1].reshape(1000, 1000),
-            y.reshape(1000, 1000),
-            cmap="rainbow",
-        )
+    # def plot_heatmap_at_axes(self, X, y, axes, title):
+    #     axes.set_title(title)
+    #     self.set_axes(axes)
+    #     return axes.pcolormesh(
+    #         X[:, 0].reshape(1000, 1000),
+    #         X[:, 1].reshape(1000, 1000),
+    #         y.reshape(1000, 1000),
+    #         cmap="rainbow",
+    #     )
 
     def plot_result(self, solver, colorbar=[0, 0, 0]):
         from matplotlib import pyplot as plt
@@ -2728,13 +2617,24 @@ class Fractional_Poisson_3D(PDECases):
 
         fig, axes = plt.subplots(1, 3, figsize=(15, 5))
         axs = []
+        shape = [1000, 1000]
         axs.append(
-            self.plot_heatmap_at_axes(X, y, axes=axes[0], title="Exact solution")
+            self.Visualization.plot_heatmap_2D(
+                X, y, shape=shape, axes=axes[0], title="Exact solution"
+            )
         )
-        axs.append(self.plot_heatmap_at_axes(X, model_y, axes[1], title=solver.name))
         axs.append(
-            self.plot_heatmap_at_axes(
-                X, np.abs(model_y - y), axes[2], title="Absolute error"
+            self.Visualization.plot_heatmap_2D(
+                X, model_y, shape=shape, axes=axes[1], title=solver.name
+            )
+        )
+        axs.append(
+            self.Visualization.plot_heatmap_2D(
+                X,
+                np.abs(model_y - y),
+                shape=shape,
+                axes=axes[2],
+                title="Absolute error",
             )
         )
 
@@ -2765,6 +2665,13 @@ class Fractional_Diffusion_1D(PDECases):
             layer_size=layer_size,
             activation=activation,
             initializer=initializer,
+            visualization=Visualization_2D(
+                x_limit=[0, 1],
+                y_limit=[0, 1],
+                x_label="t",
+                y_label="x",
+                feature_transform=lambda X: X[:, [1, 0]],
+            ),
         )
 
     def gen_pde(self):
@@ -2847,30 +2754,30 @@ class Fractional_Diffusion_1D(PDECases):
             + x[:, 0:1] ** 3 * (1 - x[:, 0:1]) ** 3
         )
 
-    def set_axes(self, axes):
-        axes.set_xlim(0, 1)
-        axes.set_ylim(0, 1)
-        axes.set_xlabel("t")
-        axes.set_ylabel("x")
+    # def set_axes(self, axes):
+    #     axes.set_xlim(0, 1)
+    #     axes.set_ylim(0, 1)
+    #     axes.set_xlabel("t")
+    #     axes.set_ylabel("x")
 
-    def plot_data(self, X, axes=None):
-        from matplotlib import pyplot as plt
+    # def plot_data(self, X, axes=None):
+    #     from matplotlib import pyplot as plt
 
-        if axes is None:
-            fig, axes = plt.subplots()
-        self.set_axes(axes)
-        axes.scatter(X[:, 1], X[:, 0])
-        return axes
+    #     if axes is None:
+    #         fig, axes = plt.subplots()
+    #     self.set_axes(axes)
+    #     axes.scatter(X[:, 1], X[:, 0])
+    #     return axes
 
-    def plot_heatmap_at_axes(self, X, y, axes, title):
-        axes.set_title(title)
-        self.set_axes(axes)
-        return axes.pcolormesh(
-            X[:, 1].reshape(1000, 1000),
-            X[:, 0].reshape(1000, 1000),
-            y.reshape(1000, 1000),
-            cmap="rainbow",
-        )
+    # def plot_heatmap_at_axes(self, X, y, axes, title):
+    #     axes.set_title(title)
+    #     self.set_axes(axes)
+    #     return axes.pcolormesh(
+    #         X[:, 1].reshape(1000, 1000),
+    #         X[:, 0].reshape(1000, 1000),
+    #         y.reshape(1000, 1000),
+    #         cmap="rainbow",
+    #     )
 
     def plot_result(self, solver, colorbar=[0, 0, 0]):
         from matplotlib import pyplot as plt
@@ -2887,13 +2794,24 @@ class Fractional_Diffusion_1D(PDECases):
 
         fig, axes = plt.subplots(1, 3, figsize=(15, 5))
         axs = []
+        shape = [1000, 1000]
         axs.append(
-            self.plot_heatmap_at_axes(X, y, axes=axes[0], title="Exact solution")
+            self.Visualization.plot_heatmap_2D(
+                X, y, shape=shape, axes=axes[0], title="Exact solution"
+            )
         )
-        axs.append(self.plot_heatmap_at_axes(X, model_y, axes[1], title=solver.name))
         axs.append(
-            self.plot_heatmap_at_axes(
-                X, np.abs(model_y - y), axes[2], title="Absolute error"
+            self.Visualization.plot_heatmap_2D(
+                X, model_y, shape=shape, axes=axes[1], title=solver.name
+            )
+        )
+        axs.append(
+            self.Visualization.plot_heatmap_2D(
+                X,
+                np.abs(model_y - y),
+                shape=shape,
+                axes=axes[2],
+                title="Absolute error",
             )
         )
 
