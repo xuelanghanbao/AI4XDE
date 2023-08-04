@@ -1,3 +1,4 @@
+import numpy as np
 import matplotlib.pyplot as plt
 
 
@@ -75,3 +76,32 @@ class Visualization_2D:
             y.reshape(shape[0], shape[1]),
             cmap="rainbow",
         )
+
+    def plot_exact_predict_error_2D(
+        self, x, y_true, y_pred, shape, title, colorbar=[True, True, True]
+    ):
+        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+        axs = []
+        axs.append(
+            self.plot_heatmap_2D(
+                x, y_true, shape=shape, axes=axes[0], title="Exact solution"
+            )
+        )
+        axs.append(
+            self.plot_heatmap_2D(x, y_pred, shape=shape, axes=axes[1], title=title)
+        )
+        axs.append(
+            self.plot_heatmap_2D(
+                x,
+                np.abs(y_pred - y_true),
+                shape=shape,
+                axes=axes[2],
+                title="Absolute error",
+            )
+        )
+
+        for needColorbar, ax, axe in zip(colorbar, axs, axes):
+            if needColorbar:
+                fig.colorbar(ax, ax=axe)
+        plt.show()
+        return fig, axes
