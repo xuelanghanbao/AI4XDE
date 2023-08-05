@@ -702,8 +702,6 @@ class Poisson_2D_Fractional_Inverse(PDECases):
         print(f"alpha pred: {alpha_pred}")
         print(f"alpha error: {alpha_error}")
 
-        from matplotlib import pyplot as plt
-
         X = np.array(
             [
                 [x1, x2]
@@ -716,27 +714,7 @@ class Poisson_2D_Fractional_Inverse(PDECases):
         model_y = solver.model.predict(X)
         model_y[self.geomtime.inside(X) == 0] = np.nan
 
-        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-        axs = []
-        shape = [1000, 1000]
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X, y, shape, axes=axes[0], title="Exact solution"
-            )
+        fig, axes = self.Visualization.plot_exact_predict_error_2D(
+            X, y, model_y, shape=[1000, 1000], title=solver.name, colorbar=colorbar
         )
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X, model_y, shape, axes=axes[1], title=solver.name
-            )
-        )
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X, np.abs(model_y - y), shape, axes=axes[2], title="Absolute error"
-            )
-        )
-
-        for needColorbar, ax, axe in zip(colorbar, axs, axes):
-            if needColorbar:
-                fig.colorbar(ax, ax=axe)
-        plt.show()
         return fig, axes

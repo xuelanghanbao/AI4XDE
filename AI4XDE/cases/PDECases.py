@@ -390,8 +390,6 @@ class Laplace_disk(PDECases):
         return net
 
     def plot_result(self, solver, colorbar=[0, 0, 0]):
-        from matplotlib import pyplot as plt
-
         X = np.array(
             [
                 [x1, x2]
@@ -405,34 +403,9 @@ class Laplace_disk(PDECases):
         y[self.geomtime.inside(X) == 0] = np.nan
         model_y[self.geomtime.inside(X) == 0] = np.nan
 
-        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-        axs = []
-        shape = [1000, 1000]
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X, y, shape=shape, axes=axes[0], title="Exact solution"
-            )
+        fig, axes = self.Visualization.plot_exact_predict_error_2D(
+            X, y, model_y, shape=[1000, 1000], title=solver.name, colorbar=colorbar
         )
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X, model_y, shape=shape, axes=axes[1], title=solver.name
-            )
-        )
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X,
-                np.abs(model_y - y),
-                shape=shape,
-                axes=axes[2],
-                title="Absolute error",
-            )
-        )
-
-        for needColorbar, ax, axe in zip(colorbar, axs, axes):
-            if needColorbar:
-                fig.colorbar(ax, ax=axe)
-
-        plt.show()
         return fig, axes
 
 
@@ -586,8 +559,6 @@ class Helmholtz(PDECases):
         )
 
     def plot_result(self, solver, colorbar=[0, 0, 0]):
-        from matplotlib import pyplot as plt
-
         X = np.array(
             [
                 [x1, x2]
@@ -598,33 +569,9 @@ class Helmholtz(PDECases):
         y = self.sol(X)
         model_y = solver.model.predict(X)
 
-        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-        axs = []
-        shape = [1000, 1000]
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X, y, shape=shape, axes=axes[0], title="Exact solution"
-            )
+        fig, axes = self.Visualization.plot_exact_predict_error_2D(
+            X, y, model_y, shape=[1000, 1000], title=solver.name, colorbar=colorbar
         )
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X, model_y, shape=shape, axes=axes[1], title=solver.name
-            )
-        )
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X,
-                np.abs(model_y - y),
-                shape=shape,
-                axes=axes[2],
-                title="Absolute error",
-            )
-        )
-
-        for needColorbar, ax, axe in zip(colorbar, axs, axes):
-            if needColorbar:
-                fig.colorbar(ax, ax=axe)
-        plt.show()
         return fig, axes
 
 
@@ -737,8 +684,6 @@ class Helmholtz_Hole(PDECases):
         )
 
     def plot_result(self, solver, colorbar=[0, 0, 0]):
-        from matplotlib import pyplot as plt
-
         X = np.array(
             [
                 [x1, x2]
@@ -751,33 +696,9 @@ class Helmholtz_Hole(PDECases):
         model_y = solver.model.predict(X)
         model_y[self.geomtime.inside(X) == 0] = np.nan
 
-        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-        axs = []
-        shape = [1000, 1000]
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X, y, shape=shape, axes=axes[0], title="Exact solution"
-            )
+        fig, axes = self.Visualization.plot_exact_predict_error_2D(
+            X, y, model_y, shape=[1000, 1000], title=solver.name, colorbar=colorbar
         )
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X, model_y, shape=shape, axes=axes[1], title=solver.name
-            )
-        )
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X,
-                np.abs(model_y - y),
-                shape=shape,
-                axes=axes[2],
-                title="Absolute error",
-            )
-        )
-
-        for needColorbar, ax, axe in zip(colorbar, axs, axes):
-            if needColorbar:
-                fig.colorbar(ax, ax=axe)
-        plt.show()
         return fig, axes
 
 
@@ -925,8 +846,6 @@ class Helmholtz_Sound_hard_Absorbing(PDECases):
         )
 
     def plot_result(self, solver, colorbar=[0, 0, 0]):
-        from matplotlib import pyplot as plt
-
         X = np.array(
             [
                 [x1, x2]
@@ -934,39 +853,28 @@ class Helmholtz_Sound_hard_Absorbing(PDECases):
                 for x2 in np.linspace(-self.length / 2, self.length / 2, 1000)
             ]
         )
-        y = self.sol(X)[:, 0]
+        y = self.sol(X)
         y[self.geomtime.inside(X) == 0] = np.nan
-        model_y = solver.model.predict(X)[:, 0]
+        model_y = solver.model.predict(X)
         model_y[self.geomtime.inside(X) == 0] = np.nan
 
-        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-        axs = []
-        shape = [1000, 1000]
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X, y, shape=shape, axes=axes[0], title="Exact solution"
-            )
+        fig0, axes0 = self.Visualization.plot_exact_predict_error_2D(
+            X,
+            y[:, 0],
+            model_y[:, 0],
+            shape=[1000, 1000],
+            title=solver.name + " at dim 0",
+            colorbar=colorbar,
         )
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X, model_y, shape=shape, axes=axes[1], title=solver.name
-            )
+        fig1, axes1 = self.Visualization.plot_exact_predict_error_2D(
+            X,
+            y[:, 1],
+            model_y[:, 1],
+            shape=[1000, 1000],
+            title=solver.name + " at dim 1",
+            colorbar=colorbar,
         )
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X,
-                np.abs(model_y - y),
-                shape=shape,
-                axes=axes[2],
-                title="Absolute error",
-            )
-        )
-
-        for needColorbar, ax, axe in zip(colorbar, axs, axes):
-            if needColorbar:
-                fig.colorbar(ax, ax=axe)
-        plt.show()
-        return fig, axes
+        return fig0, axes0, fig1, axes1
 
 
 class Kovasznay_Flow(PDECases):
@@ -1073,8 +981,6 @@ class Kovasznay_Flow(PDECases):
         )
 
     def plot_result(self, solver, colorbar=[0, 0, 0]):
-        from matplotlib import pyplot as plt
-
         X = np.array(
             [
                 [x1, x2]
@@ -1082,39 +988,36 @@ class Kovasznay_Flow(PDECases):
                 for x2 in np.linspace(-0.5, 1.5, 1000)
             ]
         )
-        y = self.sol(X)[:, 0]
+        y = self.sol(X)
         y[self.geomtime.inside(X) == 0] = np.nan
-        model_y = solver.model.predict(X)[:, 0]
+        model_y = solver.model.predict(X)
         model_y[self.geomtime.inside(X) == 0] = np.nan
 
-        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-        axs = []
-        shape = [1000, 1000]
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X, y, shape=shape, axes=axes[0], title="Exact solution"
-            )
+        fig0, axes0 = self.Visualization.plot_exact_predict_error_2D(
+            X,
+            y[:, 0],
+            model_y[:, 0],
+            shape=[1000, 1000],
+            title=solver.name + " at dim 0",
+            colorbar=colorbar,
         )
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X, model_y, shape=shape, axes=axes[1], title=solver.name
-            )
+        fig1, axes1 = self.Visualization.plot_exact_predict_error_2D(
+            X,
+            y[:, 1],
+            model_y[:, 1],
+            shape=[1000, 1000],
+            title=solver.name + " at dim 1",
+            colorbar=colorbar,
         )
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X,
-                np.abs(model_y - y),
-                shape=shape,
-                axes=axes[2],
-                title="Absolute error",
-            )
+        fig2, axes2 = self.Visualization.plot_exact_predict_error_2D(
+            X,
+            y[:, 2],
+            model_y[:, 2],
+            shape=[1000, 1000],
+            title=solver.name + " at dim 2",
+            colorbar=colorbar,
         )
-
-        for needColorbar, ax, axe in zip(colorbar, axs, axes):
-            if needColorbar:
-                fig.colorbar(ax, ax=axe)
-        plt.show()
-        return fig, axes
+        return fig0, axes0, fig1, axes1, fig2, axes2
 
 
 class Burgers(PDECases):
@@ -1182,38 +1085,12 @@ class Burgers(PDECases):
         return -bkd.sin(np.pi * x[:, 0:1]) + (1 - x[:, 0:1] ** 2) * (x[:, 1:]) * y
 
     def plot_result(self, solver, colorbar=[0, 0, 0]):
-        from matplotlib import pyplot as plt
-
         X, y = self.get_testdata()
         model_y = solver.model.predict(X)
 
-        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-        axs = []
-        shape = [100, 256]
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X, y, shape=shape, axes=axes[0], title="Exact solution"
-            )
+        fig, axes = self.Visualization.plot_exact_predict_error_2D(
+            X, y, model_y, shape=[100, 256], title=solver.name, colorbar=colorbar
         )
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X, model_y, shape=shape, axes=axes[1], title=solver.name
-            )
-        )
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X,
-                np.abs(model_y - y),
-                shape=shape,
-                axes=axes[2],
-                title="Absolute error",
-            )
-        )
-
-        for needColorbar, ax, axe in zip(colorbar, axs, axes):
-            if needColorbar:
-                fig.colorbar(ax, ax=axe)
-        plt.show()
         return fig, axes
 
 
@@ -1285,8 +1162,6 @@ class Heat(PDECases):
         )
 
     def plot_result(self, solver, colorbar=[0, 0, 0]):
-        from matplotlib import pyplot as plt
-
         X = np.array(
             [
                 [x, t]
@@ -1297,33 +1172,9 @@ class Heat(PDECases):
         y = self.sol(X)
         model_y = solver.model.predict(X)
 
-        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-        axs = []
-        shape = [1000, 1000]
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X, y, shape=shape, axes=axes[0], title="Exact solution"
-            )
+        fig, axes = self.Visualization.plot_exact_predict_error_2D(
+            X, y, model_y, shape=[1000, 1000], title=solver.name, colorbar=colorbar
         )
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X, model_y, shape=shape, axes=axes[1], title=solver.name
-            )
-        )
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X,
-                np.abs(model_y - y),
-                shape=shape,
-                axes=axes[2],
-                title="Absolute error",
-            )
-        )
-
-        for needColorbar, ax, axe in zip(colorbar, axs, axes):
-            if needColorbar:
-                fig.colorbar(ax, ax=axe)
-        plt.show()
         return fig, axes
 
 
@@ -1406,41 +1257,15 @@ class Diffusion(PDECases):
         return bkd.sin(np.pi * x[:, 0:1]) + (1 - x[:, 0:1] ** 2) * (x[:, 1:]) * y
 
     def plot_result(self, solver, colorbar=[0, 0, 0]):
-        from matplotlib import pyplot as plt
-
         X = np.array(
             [[x, t] for x in np.linspace(-1, 1, 1000) for t in np.linspace(0, 1, 1000)]
         )
         y = self.sol(X)
         model_y = solver.model.predict(X)
 
-        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-        axs = []
-        shape = [1000, 1000]
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X, y, shape=shape, axes=axes[0], title="Exact solution"
-            )
+        fig, axes = self.Visualization.plot_exact_predict_error_2D(
+            X, y, model_y, shape=[1000, 1000], title=solver.name, colorbar=colorbar
         )
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X, model_y, shape=shape, axes=axes[1], title=solver.name
-            )
-        )
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X,
-                np.abs(model_y - y),
-                shape=shape,
-                axes=axes[2],
-                title="Absolute error",
-            )
-        )
-
-        for needColorbar, ax, axe in zip(colorbar, axs, axes):
-            if needColorbar:
-                fig.colorbar(ax, ax=axe)
-        plt.show()
         return fig, axes
 
 
@@ -1523,8 +1348,6 @@ class Diffusion_reaction(PDECases):
         )
 
     def plot_result(self, solver, colorbar=[0, 0, 0]):
-        from matplotlib import pyplot as plt
-
         X = np.array(
             [
                 [x, t]
@@ -1535,33 +1358,9 @@ class Diffusion_reaction(PDECases):
         y = self.sol(X)
         model_y = solver.model.predict(X)
 
-        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-        axs = []
-        shape = [1000, 1000]
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X, y, shape=shape, axes=axes[0], title="Exact solution"
-            )
+        fig, axes = self.Visualization.plot_exact_predict_error_2D(
+            X, y, model_y, shape=[1000, 1000], title=solver.name, colorbar=colorbar
         )
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X, model_y, shape=shape, axes=axes[1], title=solver.name
-            )
-        )
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X,
-                np.abs(model_y - y),
-                shape=shape,
-                axes=axes[2],
-                title="Absolute error",
-            )
-        )
-
-        for needColorbar, ax, axe in zip(colorbar, axs, axes):
-            if needColorbar:
-                fig.colorbar(ax, ax=axe)
-        plt.show()
         return fig, axes
 
 
@@ -1642,38 +1441,12 @@ class AllenCahn(PDECases):
         )
 
     def plot_result(self, solver, colorbar=[0, 0, 0]):
-        from matplotlib import pyplot as plt
-
         X, y = self.get_testdata()
         model_y = solver.model.predict(X)
 
-        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-        axs = []
-        shape = [101, 201]
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X, y, shape=shape, axes=axes[0], title="Exact solution"
-            )
+        fig, axes = self.Visualization.plot_exact_predict_error_2D(
+            X, y, model_y, shape=[101, 201], title=solver.name, colorbar=colorbar
         )
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X, model_y, shape=shape, axes=axes[1], title=solver.name
-            )
-        )
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X,
-                np.abs(model_y - y),
-                shape=shape,
-                axes=axes[2],
-                title="Absolute error",
-            )
-        )
-
-        for needColorbar, ax, axe in zip(colorbar, axs, axes):
-            if needColorbar:
-                fig.colorbar(ax, ax=axe)
-        plt.show()
         return fig, axes
 
 
@@ -1752,41 +1525,15 @@ class Klein_Gordon(PDECases):
         )
 
     def plot_result(self, solver, colorbar=[0, 0, 0]):
-        from matplotlib import pyplot as plt
-
         X = np.array(
             [[x, t] for x in np.linspace(-1, 1, 1000) for t in np.linspace(0, 10, 1000)]
         )
         y = self.sol(X)
         model_y = solver.model.predict(X)
 
-        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-        axs = []
-        shape = [1000, 1000]
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X, y, shape=shape, axes=axes[0], title="Exact solution"
-            )
+        fig, axes = self.Visualization.plot_exact_predict_error_2D(
+            X, y, model_y, shape=[1000, 1000], title=solver.name, colorbar=colorbar
         )
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X, model_y, shape=shape, axes=axes[1], title=solver.name
-            )
-        )
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X,
-                np.abs(model_y - y),
-                shape=shape,
-                axes=axes[2],
-                title="Absolute error",
-            )
-        )
-
-        for needColorbar, ax, axe in zip(colorbar, axs, axes):
-            if needColorbar:
-                fig.colorbar(ax, ax=axe)
-        plt.show()
         return fig, axes
 
 
@@ -1978,8 +1725,6 @@ class Beltrami_flow(PDECases):
         )
 
     def plot_result(self, solver, colorbar=[0, 0, 0]):
-        from matplotlib import pyplot as plt
-
         X = np.array(
             [
                 [0, 0, x, t]
@@ -1987,37 +1732,42 @@ class Beltrami_flow(PDECases):
                 for t in np.linspace(0, 1, 1000)
             ]
         )
-        y = self.sol(X)[:, 0]
-        model_y = solver.model.predict(X)[:, 0]
+        y = self.sol(X)
+        model_y = solver.model.predict(X)
 
-        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-        axs = []
-        shape = [1000, 1000]
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X, y, shape=shape, axes=axes[0], title="Exact solution"
-            )
+        fig0, axes0 = self.Visualization.plot_exact_predict_error_2D(
+            X,
+            y[:, 0],
+            model_y[:, 0],
+            shape=[1000, 1000],
+            title=solver.name + " at dim 0",
+            colorbar=colorbar,
         )
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X, model_y, shape=shape, axes=axes[1], title=solver.name
-            )
+        fig1, axes1 = self.Visualization.plot_exact_predict_error_2D(
+            X,
+            y[:, 1],
+            model_y[:, 1],
+            shape=[1000, 1000],
+            title=solver.name + " at dim 1",
+            colorbar=colorbar,
         )
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X,
-                np.abs(model_y - y),
-                shape=shape,
-                axes=axes[2],
-                title="Absolute error",
-            )
+        fig2, axes2 = self.Visualization.plot_exact_predict_error_2D(
+            X,
+            y[:, 2],
+            model_y[:, 2],
+            shape=[1000, 1000],
+            title=solver.name + " at dim 2",
+            colorbar=colorbar,
         )
-
-        for needColorbar, ax, axe in zip(colorbar, axs, axes):
-            if needColorbar:
-                fig.colorbar(ax, ax=axe)
-        plt.show()
-        return fig, axes
+        fig3, axes3 = self.Visualization.plot_exact_predict_error_2D(
+            X,
+            y[:, 3],
+            model_y[:, 3],
+            shape=[1000, 1000],
+            title=solver.name + " at dim 3",
+            colorbar=colorbar,
+        )
+        return fig0, axes0, fig1, axes1, fig2, axes2, fig3, axes3
 
 
 class Schrodinger(PDECases):
@@ -2138,42 +1888,26 @@ class Schrodinger(PDECases):
         )
 
     def plot_result(self, solver, colorbar=[0, 0, 0]):
-        from matplotlib import pyplot as plt
-
         X, y = self.get_testdata()
         model_y = solver.model.predict(X)
 
-        y = y[:, 0]
-        model_y = model_y[:, 0]
-
-        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-        axs = []
-        shape = [201, 256]
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X, y, shape=shape, axes=axes[0], title="Exact solution"
-            )
+        fig0, axes0 = self.Visualization.plot_exact_predict_error_2D(
+            X,
+            y[:, 0],
+            model_y[:, 0],
+            shape=[201, 256],
+            title=solver.name + " at dim 0",
+            colorbar=colorbar,
         )
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X, model_y, shape=shape, axes=axes[1], title=solver.name
-            )
+        fig1, axes1 = self.Visualization.plot_exact_predict_error_2D(
+            X,
+            y[:, 1],
+            model_y[:, 1],
+            shape=[201, 256],
+            title=solver.name + " at dim 1",
+            colorbar=colorbar,
         )
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X,
-                np.abs(model_y - y),
-                shape=shape,
-                axes=axes[2],
-                title="Absolute error",
-            )
-        )
-
-        for needColorbar, ax, axe in zip(colorbar, axs, axes):
-            if needColorbar:
-                fig.colorbar(ax, ax=axe)
-        plt.show()
-        return fig, axes
+        return fig0, axes0, fig1, axes1
 
 
 class IDE(PDECases):
@@ -2444,8 +2178,6 @@ class Fractional_Poisson_2D(PDECases):
         ) * y
 
     def plot_result(self, solver, colorbar=[0, 0, 0]):
-        from matplotlib import pyplot as plt
-
         X = np.array(
             [
                 [x1, x2]
@@ -2458,33 +2190,9 @@ class Fractional_Poisson_2D(PDECases):
         model_y = solver.model.predict(X)
         model_y[self.geomtime.inside(X) == 0] = np.nan
 
-        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-        axs = []
-        shape = [1000, 1000]
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X, y, shape=shape, axes=axes[0], title="Exact solution"
-            )
+        fig, axes = self.Visualization.plot_exact_predict_error_2D(
+            X, y, model_y, shape=[1000, 1000], title=solver.name, colorbar=colorbar
         )
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X, model_y, shape=shape, axes=axes[1], title=solver.name
-            )
-        )
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X,
-                np.abs(model_y - y),
-                shape=shape,
-                axes=axes[2],
-                title="Absolute error",
-            )
-        )
-
-        for needColorbar, ax, axe in zip(colorbar, axs, axes):
-            if needColorbar:
-                fig.colorbar(ax, ax=axe)
-        plt.show()
         return fig, axes
 
 
@@ -2573,34 +2281,7 @@ class Fractional_Poisson_3D(PDECases):
             1 - bkd.from_numpy(np.sum(bkd.to_numpy(x) ** 2, axis=1, keepdims=True))
         ) * y
 
-    # def set_axes(self, axes):
-    #     axes.set_xlim(-1, 1)
-    #     axes.set_ylim(-1, 1)
-    #     axes.set_xlabel("x1")
-    #     axes.set_ylabel("x2")
-
-    # def plot_data(self, X, axes=None):
-    #     from matplotlib import pyplot as plt
-
-    #     if axes is None:
-    #         fig, axes = plt.subplots()
-    #     self.set_axes(axes)
-    #     axes.scatter(X[:, 0], X[:, 1])
-    #     return axes
-
-    # def plot_heatmap_at_axes(self, X, y, axes, title):
-    #     axes.set_title(title)
-    #     self.set_axes(axes)
-    #     return axes.pcolormesh(
-    #         X[:, 0].reshape(1000, 1000),
-    #         X[:, 1].reshape(1000, 1000),
-    #         y.reshape(1000, 1000),
-    #         cmap="rainbow",
-    #     )
-
     def plot_result(self, solver, colorbar=[0, 0, 0]):
-        from matplotlib import pyplot as plt
-
         X = np.array(
             [
                 [x1, x2]
@@ -2609,39 +2290,15 @@ class Fractional_Poisson_3D(PDECases):
             ]
         )
         x3 = 0
-        X = np.concatenate([X, np.ones((X.shape[0], 1)) * x3], axis=1)
+        X = np.hstack((X, np.full((X.shape[0], 1), x3)))
         y = self.sol(X)
         y[self.geomtime.inside(X) == 0] = np.nan
         model_y = solver.model.predict(X)
         model_y[self.geomtime.inside(X) == 0] = np.nan
 
-        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-        axs = []
-        shape = [1000, 1000]
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X, y, shape=shape, axes=axes[0], title="Exact solution"
-            )
+        fig, axes = self.Visualization.plot_exact_predict_error_2D(
+            X, y, model_y, shape=[1000, 1000], title=solver.name, colorbar=colorbar
         )
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X, model_y, shape=shape, axes=axes[1], title=solver.name
-            )
-        )
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X,
-                np.abs(model_y - y),
-                shape=shape,
-                axes=axes[2],
-                title="Absolute error",
-            )
-        )
-
-        for needColorbar, ax, axe in zip(colorbar, axs, axes):
-            if needColorbar:
-                fig.colorbar(ax, ax=axe)
-        plt.show()
         return fig, axes
 
 
@@ -2754,34 +2411,7 @@ class Fractional_Diffusion_1D(PDECases):
             + x[:, 0:1] ** 3 * (1 - x[:, 0:1]) ** 3
         )
 
-    # def set_axes(self, axes):
-    #     axes.set_xlim(0, 1)
-    #     axes.set_ylim(0, 1)
-    #     axes.set_xlabel("t")
-    #     axes.set_ylabel("x")
-
-    # def plot_data(self, X, axes=None):
-    #     from matplotlib import pyplot as plt
-
-    #     if axes is None:
-    #         fig, axes = plt.subplots()
-    #     self.set_axes(axes)
-    #     axes.scatter(X[:, 1], X[:, 0])
-    #     return axes
-
-    # def plot_heatmap_at_axes(self, X, y, axes, title):
-    #     axes.set_title(title)
-    #     self.set_axes(axes)
-    #     return axes.pcolormesh(
-    #         X[:, 1].reshape(1000, 1000),
-    #         X[:, 0].reshape(1000, 1000),
-    #         y.reshape(1000, 1000),
-    #         cmap="rainbow",
-    #     )
-
     def plot_result(self, solver, colorbar=[0, 0, 0]):
-        from matplotlib import pyplot as plt
-
         X = np.array(
             [
                 [x1, x2]
@@ -2792,31 +2422,7 @@ class Fractional_Diffusion_1D(PDECases):
         y = self.sol(X)
         model_y = solver.model.predict(X)
 
-        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-        axs = []
-        shape = [1000, 1000]
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X, y, shape=shape, axes=axes[0], title="Exact solution"
-            )
+        fig, axes = self.Visualization.plot_exact_predict_error_2D(
+            X, y, model_y, shape=[1000, 1000], title=solver.name, colorbar=colorbar
         )
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X, model_y, shape=shape, axes=axes[1], title=solver.name
-            )
-        )
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X,
-                np.abs(model_y - y),
-                shape=shape,
-                axes=axes[2],
-                title="Absolute error",
-            )
-        )
-
-        for needColorbar, ax, axe in zip(colorbar, axs, axes):
-            if needColorbar:
-                fig.colorbar(ax, ax=axe)
-        plt.show()
         return fig, axes

@@ -410,31 +410,6 @@ class Diffusion_Inverse(InverseCase):
             solution=self.sol,
         )
 
-    # def set_axes(self, axes):
-    #     axes.set_xlim(0, 1)
-    #     axes.set_ylim(-1, 1)
-    #     axes.set_xlabel("t")
-    #     axes.set_ylabel("x")
-
-    # def plot_data(self, X, axes=None):
-    #     from matplotlib import pyplot as plt
-
-    #     if axes is None:
-    #         fig, axes = plt.subplots()
-    #     self.set_axes(axes)
-    #     axes.scatter(X[:, 1], X[:, 0])
-    #     return axes
-
-    # def plot_heatmap_at_axes(self, X, y, axes, title):
-    #     axes.set_title(title)
-    #     self.set_axes(axes)
-    #     return axes.pcolormesh(
-    #         X[:, 1].reshape(1000, 1000),
-    #         X[:, 0].reshape(1000, 1000),
-    #         y.reshape(1000, 1000),
-    #         cmap="rainbow",
-    #     )
-
     def plot_result(self, solver, colorbar=[0, 0, 0]):
         C_pred = bkd.to_numpy(self.C)
 
@@ -444,41 +419,15 @@ class Diffusion_Inverse(InverseCase):
         print(f"C pred: {C_pred}")
         print(f"C error: {C_error}")
 
-        from matplotlib import pyplot as plt
-
         X = np.array(
             [[x, t] for x in np.linspace(-1, 1, 1000) for t in np.linspace(0, 1, 1000)]
         )
         y = self.sol(X)
         model_y = solver.model.predict(X)
 
-        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-        axs = []
-        shape = [1000, 1000]
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X, y, shape=shape, axes=axes[0], title="Exact solution"
-            )
+        fig, axes = self.Visualization.plot_exact_predict_error_2D(
+            X, y, model_y, shape=[1000, 1000], title=solver.name, colorbar=colorbar
         )
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X, model_y, shape=shape, axes=axes[1], title=solver.name
-            )
-        )
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X,
-                np.abs(model_y - y),
-                shape=shape,
-                axes=axes[2],
-                title="Absolute error",
-            )
-        )
-
-        for needColorbar, ax, axe in zip(colorbar, axs, axes):
-            if needColorbar:
-                fig.colorbar(ax, ax=axe)
-        plt.show()
         return fig, axes
 
 
@@ -590,41 +539,27 @@ class Diffusion_Reaction_Inverse(InverseCase):
         print(f"kf pred: {kf_pred}, D pred: {D_pred}")
         print(f"kf error: {kf_error}, D error: {D_error}")
 
-        from matplotlib import pyplot as plt
-
         X, y = self.get_testdata()
-        y = y[:, 0]
         model_y = solver.model.predict(X)
-        model_y = model_y[:, 0]
 
-        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-        axs = []
-        shape = [201, 201]
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X, y, shape=shape, axes=axes[0], title="Exact solution"
-            )
-        )
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X, model_y, shape=shape, axes=axes[1], title=solver.name
-            )
-        )
-        axs.append(
-            self.Visualization.plot_heatmap_2D(
-                X,
-                np.abs(model_y - y),
-                shape=shape,
-                axes=axes[2],
-                title="Absolute error",
-            )
+        fig0, axes0 = self.Visualization.plot_exact_predict_error_2D(
+            X,
+            y[:, 0],
+            model_y[:, 0],
+            shape=[201, 201],
+            title=solver.name + " at dim 0",
+            colorbar=colorbar,
         )
 
-        for needColorbar, ax, axe in zip(colorbar, axs, axes):
-            if needColorbar:
-                fig.colorbar(ax, ax=axe)
-        plt.show()
-        return fig, axes
+        fig1, axes1 = self.Visualization.plot_exact_predict_error_2D(
+            X,
+            y[:, 1],
+            model_y[:, 1],
+            shape=[201, 201],
+            title=solver.name + " at dim 1",
+            colorbar=colorbar,
+        )
+        return [fig0, axes0, fig1, axes1]
 
 
 class Navier_Stokes_Incompressible_Flow_Around_Cylinder_Inverse(InverseCase):
@@ -755,7 +690,6 @@ class Navier_Stokes_Incompressible_Flow_Around_Cylinder_Inverse(InverseCase):
             num_initial=100,
             anchors=ob_xyt,
         )
-
 
     def plot_result(self, solver):
         C1_pred = bkd.to_numpy(self.C1)
