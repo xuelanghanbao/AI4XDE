@@ -3,6 +3,8 @@ __all__ = [
     "FuncFromFormula",
     "FuncFromData",
     "PoissonCases",
+    "PoissonCase1D",
+    "PoissonCase2D",
     "Poisson_1D_Dirichlet",
     "Poisson_1D_Dirichlet_Neumann",
     "Poisson_1D_Dirichlet_Robin",
@@ -14,6 +16,7 @@ __all__ = [
     "Poisson_1D_Unknown_Forcing_Field_Inverse",
     "Poisson_1D_Fractional_Inverse",
     "Poisson_2D_Fractional_Inverse",
+    "Poisson_2D_Peak",
     "PDECases",
     "A_Simple_ODE",
     "LotkaVolterra",
@@ -48,6 +51,7 @@ __all__ = [
     "Diffusion_Inverse",
     "Diffusion_Reaction_Inverse",
     "Navier_Stokes_Incompressible_Flow_Around_Cylinder_Inverse",
+    "Bimodal_2D",
 ]
 
 from .PDECases import (
@@ -74,9 +78,12 @@ from .PDECases import (
     Fractional_Poisson_3D,
     Fractional_Diffusion_1D,
     Schrodinger,
+    Bimodal_2D,
 )
 from .FuncCases import FuncCases, FuncFromFormula, FuncFromData
 from .PoissonCases import (
+    PoissonCase1D,
+    PoissonCase2D,
     Poisson_1D_Dirichlet,
     Poisson_1D_Dirichlet_Neumann,
     Poisson_1D_Dirichlet_Robin,
@@ -88,6 +95,7 @@ from .PoissonCases import (
     Poisson_1D_Unknown_Forcing_Field_Inverse,
     Poisson_1D_Fractional_Inverse,
     Poisson_2D_Fractional_Inverse,
+    Poisson_2D_Peak,
 )
 from .WaveCases import WaveCase1D, Wave_1D_STMsFFN, Wave_1D_Hard_Boundary
 from .InverseCases import (

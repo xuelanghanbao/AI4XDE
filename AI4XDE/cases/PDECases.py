@@ -2426,3 +2426,111 @@ class Fractional_Diffusion_1D(PDECases):
             X, y, model_y, shape=[1000, 1000], title=solver.name, colorbar=colorbar
         )
         return fig, axes
+
+
+class Bimodal_2D(PDECases):
+    def __init__(
+        self,
+        NumDomain=2000,
+        layer_size=[2] + [32] * 6 + [1],
+        activation="tanh",
+        initializer="Glorot normal",
+    ):
+        super().__init__(
+            name="Bimodal in 2D",
+            NumDomain=NumDomain,
+            use_output_transform=False,
+            layer_size=layer_size,
+            activation=activation,
+            initializer=initializer,
+            metrics=None,
+            visualization=Visualization_2D(
+                x_limit=[-1, 1],
+                y_limit=[-1, 1],
+                x_label="x1",
+                y_label="x2",
+            ),
+        )
+
+    def func(self, x):
+        x1 = x[:, 0:1]
+        x2 = x[:, 1:2]
+
+        ## div(grad(u))
+        f1 = (
+            4000.0
+            * bkd.exp(-1000 * ((x1 - 0.5) ** 2 + (x2 - 0.5) ** 2))
+            * (1000 * x1**2 - 1000 * x1 + 1000 * x2**2 - 1000 * x2 + 499)
+        )
+        f2 = (
+            4000.0
+            * bkd.exp(-500 * (2 * x1**2 + 2 * x1 + 2 * x2**2 + 2 * x2 + 1))
+            * (1000 * x1**2 + 1000 * x1 + 1000 * x2**2 + 1000 * x2 + 499)
+        )
+
+        ## -div(u grad(b(x,y))) where b(x,y) = x^2 + y^2
+        f3 = (
+            4.0
+            * bkd.exp(-1000 * ((x1 - 0.5) ** 2 + (x2 - 0.5) ** 2))
+            * (1000 * x1**2 - 500 * x1 + 1000 * x2**2 - 500 * x2 - 1)
+        )
+        f4 = (
+            4.0
+            * bkd.exp(-500 * (2 * x1**2 + 2 * x1 + 2 * x2**2 + 2 * x2 + 1))
+            * (1000 * x1**2 + 500 * x1 + 1000 * x2**2 + 500 * x2 - 1)
+        )
+        return f1 + f2 + f3 + f4
+
+    def gen_pde(self):
+        def pde(x, y):
+            dy_xx = dde.grad.hessian(y, x, i=0, j=0)
+            dy_yy = dde.grad.hessian(y, x, i=1, j=1)
+            div_qx = dy_xx + dy_yy
+            mu = 2 * (x[:, 0:1] + x[:, 1:2]) * y
+            dmu_x = dde.grad.jacobian(mu, x, i=0, j=0)
+            dmu_y = dde.grad.jacobian(mu, x, i=0, j=1)
+            lfmu = dmu_x + dmu_y
+            return -lfmu + div_qx - self.func(x)
+
+        return pde
+
+    def sol(self, x):
+        x, y = x[:, 0:1], x[:, 1:2]
+        return np.exp(-1000 * ((x - 0.5) ** 2 + (y - 0.5) ** 2)) + np.exp(
+            -1000 * ((x + 0.5) ** 2 + (y + 0.5) ** 2)
+        )
+
+    def gen_geomtime(self):
+        return dde.geometry.Rectangle(xmin=[-1, -1], xmax=[1, 1])
+
+    def gen_data(self):
+        bc = dde.icbc.DirichletBC(
+            self.geomtime, self.sol, lambda _, on_boundary: on_boundary
+        )
+        return dde.data.PDE(
+            self.geomtime,
+            self.pde,
+            bc,
+            self.NumDomain,
+            100,
+            solution=self.sol,
+            num_test=2000,
+        )
+
+    def plot_result(self, solver, colorbar=[0, 0, 0]):
+        X = np.array(
+            [
+                [x1, x2]
+                for x1 in np.linspace(-1, 1, 1000)
+                for x2 in np.linspace(-1, 1, 1000)
+            ]
+        )
+        y = self.sol(X)
+        y[self.geomtime.inside(X) == 0] = np.nan
+        model_y = solver.model.predict(X)
+        model_y[self.geomtime.inside(X) == 0] = np.nan
+
+        fig, axes = self.Visualization.plot_exact_predict_error_2D(
+            X, y, model_y, shape=[1000, 1000], title=solver.name, colorbar=colorbar
+        )
+        return fig, axes

@@ -33,34 +33,36 @@ Currently,  AI4XDE supports the following examples:
 14. Inverse problem for the Poisson equation with unknown forcing field
 15. Inverse problem for the fractional Poisson equation in 1D
 16. Inverse problem for the fractional Poisson equation in 2D
-17. Laplace equation on a disk
-18. Euler Beam
-19. Helmholtz equation over a 2D square domain
-20. Helmholtz equation over a 2D square domain with a hole
-21. Helmholtz sound-hard scattering problem with absorbing boundary conditions
-22. Kovasznay Flow
-23. Burgers equation
-24. Heat equation
-25. Diffusion equation
-26. Diffusion-reaction equation
-27. Allen Cahn equation
-28. Klein-Gordon equation
-29. Beltrami flow
-30. Schrodinger equation
-31. Wave propagation with spatio-temporal multi-scale Fourier feature architecture
-32. Wave equation
-33. Integro-differential equation
-34. Volterra IDE
-35. Fractional Poisson equation in 1D
-36. Fractional Poisson equation in 2D
-37. Fractional Poisson equation in 3D
-38. Fractional_Diffusion_1D
-39. Inverse problem for the Lorenz system
-40. Inverse problem for the Lorenz system with exogenous input
-41. Inverse problem for Brinkman-Forchheimer model
-42. Inverse problem for the diffusion equation
-43. Inverse problem for the Diffusion-reaction equation
-44. Inverse problem for the Navier-Stokes equation of incompressible flow around cylinder
+17. Poisson equation in 2D peak problem
+18. Laplace equation on a disk
+19. Euler Beam
+20. Helmholtz equation over a 2D square domain
+21. Helmholtz equation over a 2D square domain with a hole
+22. Helmholtz sound-hard scattering problem with absorbing boundary conditions
+23. Kovasznay Flow
+24. Burgers equation
+25. Heat equation
+26. Diffusion equation
+27. Diffusion-reaction equation
+28. Allen Cahn equation
+29. Klein-Gordon equation
+30. Beltrami flow
+31. Schrodinger equation
+32. Wave propagation with spatio-temporal multi-scale Fourier feature architecture
+33. Wave equation
+34. Integro-differential equation
+35. Volterra IDE
+36. Fractional Poisson equation in 1D
+37. Fractional Poisson equation in 2D
+38. Fractional Poisson equation in 3D
+39. Fractional_Diffusion_1D
+40. Inverse problem for the Lorenz system
+41. Inverse problem for the Lorenz system with exogenous input
+42. Inverse problem for Brinkman-Forchheimer model
+43. Inverse problem for the diffusion equation
+44. Inverse problem for the Diffusion-reaction equation
+45. Inverse problem for the Navier-Stokes equation of incompressible flow around cylinder
+46. Bimodal in 2D
 
 #### Installation
 
