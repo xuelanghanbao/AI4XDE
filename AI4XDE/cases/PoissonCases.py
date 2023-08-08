@@ -57,6 +57,79 @@ class PoissonCase1D(PDECases):
         return axes
 
 
+class PoissonCase2D(PDECases):
+    def __init__(
+        self,
+        name,
+        NumDomain=2000,
+        x_min=None,
+        x_max=None,
+        use_output_transform=False,
+        layer_size=[2] + [32] * 3 + [1],
+        activation="tanh",
+        initializer="Glorot uniform",
+        metrics=["l2 relative error"],
+        loss_weights=None,
+        external_trainable_variables=None,
+    ):
+        self.x_min = x_min
+        self.x_max = x_max
+        super().__init__(
+            name=name,
+            NumDomain=NumDomain,
+            use_output_transform=use_output_transform,
+            layer_size=layer_size,
+            activation=activation,
+            initializer=initializer,
+            metrics=metrics,
+            loss_weights=loss_weights,
+            external_trainable_variables=external_trainable_variables,
+            visualization=Visualization_2D(
+                x_limit=[self.x_min[0], self.x_max[0]],
+                y_limit=[self.x_min[1], self.x_max[1]],
+                x_label="x1",
+                y_label="x2",
+            ),
+        )
+
+    @abstractmethod
+    def func(self, x):
+        pass
+
+    @abstractmethod
+    def gen_data(self):
+        pass
+
+    def gen_geomtime(self):
+        return dde.geometry.Rectangle(self.x_min, self.x_max)
+
+    def gen_pde(self):
+        def pde(x, y):
+            dy_xx = dde.grad.hessian(y, x, i=0, j=0)
+            dy_yy = dde.grad.hessian(y, x, i=1, j=1)
+            return -dy_xx - dy_yy - self.func(x)
+
+        return pde
+
+    def plot_result(self, solver, colorbar=[0, 0, 0]):
+        X = np.array(
+            [
+                [x1, x2]
+                for x1 in np.linspace(self.x_min[0], self.x_max[0], 1000)
+                for x2 in np.linspace(self.x_min[1], self.x_max[1], 1000)
+            ]
+        )
+        y = self.sol(X)
+        y[self.geomtime.inside(X) == 0] = np.nan
+        model_y = solver.model.predict(X)
+        model_y[self.geomtime.inside(X) == 0] = np.nan
+
+        fig, axes = self.Visualization.plot_exact_predict_error_2D(
+            X, y, model_y, shape=[1000, 1000], title=solver.name, colorbar=colorbar
+        )
+        return fig, axes
+
+
 class Poisson_1D_Dirichlet(PoissonCase1D):
     def __init__(
         self,
@@ -392,7 +465,7 @@ class Poisson_1D_Fourier_Net(PoissonCase1D):
         )
 
 
-class Poisson_2D_L_Shaped(PDECases):
+class Poisson_2D_L_Shaped(PoissonCase2D):
     def __init__(
         self,
         NumDomain=1200,
@@ -400,18 +473,16 @@ class Poisson_2D_L_Shaped(PDECases):
         activation="tanh",
         initializer="Glorot uniform",
     ):
-        visualization = Visualization_2D(
-            x_limit=[-1, 1], y_limit=[-1, 1], x_label="x1", y_label="x2"
-        )
         super().__init__(
             name="Poisson equation over L-shaped domain",
             NumDomain=NumDomain,
+            x_min=[-1, -1],
+            x_max=[1, 1],
             use_output_transform=False,
             layer_size=layer_size,
             activation=activation,
             initializer=initializer,
             metrics=None,
-            visualization=visualization,
         )
 
     def gen_data(self):
@@ -433,13 +504,8 @@ class Poisson_2D_L_Shaped(PDECases):
             [[0, 0], [1, 0], [1, -1], [-1, -1], [-1, 1], [0, 1]]
         )
 
-    def gen_pde(self):
-        def pde(x, y):
-            dy_xx = dde.grad.hessian(y, x, i=0, j=0)
-            dy_yy = dde.grad.hessian(y, x, i=1, j=1)
-            return -dy_xx - dy_yy - 1
-
-        return pde
+    def func(self, x):
+        return bkd.from_numpy(np.ones((x.shape[0], 1)))
 
     def gen_testdata(self):
         X = np.array(
@@ -454,7 +520,6 @@ class Poisson_2D_L_Shaped(PDECases):
         X = np.array(
             [[x, t] for x in np.linspace(-1, 1, 1000) for t in np.linspace(-1, 1, 1000)]
         )
-        # y = self.sol(X)
         model_y = solver.model.predict(X)
         model_y[self.geomtime.inside(X) == 0] = np.nan
 
@@ -718,3 +783,46 @@ class Poisson_2D_Fractional_Inverse(PDECases):
             X, y, model_y, shape=[1000, 1000], title=solver.name, colorbar=colorbar
         )
         return fig, axes
+
+
+class Poisson_2D_Peak(PoissonCase2D):
+    def __init__(
+        self,
+        NumDomain=2000,
+        layer_size=[2] + [32] * 6 + [1],
+        activation="tanh",
+        initializer="Glorot uniform",
+    ):
+        super().__init__(
+            name="Two-dimensional peak problem",
+            NumDomain=NumDomain,
+            x_min=[-1, -1],
+            x_max=[1, 1],
+            layer_size=layer_size,
+            activation=activation,
+            initializer=initializer,
+            metrics=None,
+        )
+
+    def func(self, x):
+        x, y = x[:, 0:1], x[:, 1:2]
+        f_1 = 1000 * (x**2 - x + y**2 - y + 0.5)
+        f_2 = -4000 * bkd.exp(-f_1)
+        return -f_1 * f_2
+
+    def sol(self, x):
+        return np.exp(-1000 * ((x[:, 0:1] - 0.5) ** 2 + (x[:, 1:2] - 0.5) ** 2))
+
+    def gen_data(self):
+        bc = dde.icbc.DirichletBC(
+            self.geomtime, self.sol, lambda _, on_boundary: on_boundary
+        )
+        return dde.data.PDE(
+            self.geomtime,
+            self.pde,
+            bc,
+            self.NumDomain,
+            100,
+            solution=self.sol,
+            num_test=2000,
+        )
