@@ -64,6 +64,7 @@ class Visualization_2D:
         if self.feature_transform is not None:
             X = self.feature_transform(X)
         axes.scatter(X[:, 0], X[:, 1])
+        plt.show()
         return axes
 
     def plot_heatmap_2D(self, X, y, shape, **kwargs):
