@@ -67,20 +67,24 @@ class FI_PINN(PINNSolver):
             N_p = int(np.floor(self.p0 * self.N_1))
             h = h[0:N_p, :]
             if N_eta <= N_p:
-                h_p = self.get_probility(h, np.array([0.0, 0.0]), np.array([1.0]))
-                mul_i = np.sum(h * h_p) / np.sum(h_p)
-                sigma_i = np.sum((h - mul_i) ** 2) / (N_p - 1)
+                h_p = self.get_probility(h, np.array([0.0, 0.0]), np.array([1.0, 1.0]))
+                mul_i = np.sum(h * h_p, axis=0) / np.sum(h_p)
+                sigma_i = np.sum((h - mul_i) ** 2, axis=0) / (N_p - 1)
             else:
                 break
         mul_opt = np.mean(h[0:N_p, :], axis=0)
         sigma_opt = np.var(h[0:N_p, :], axis=0, ddof=1)
+
+        print(f"mul_opt:{mul_opt}, sigma_opt:{sigma_opt}")
 
         N2_sample = self.random_points(self.N_2, mul_opt, sigma_opt)
 
         Pf = (
             np.sum(
                 (self.g(N2_sample) > 0)
-                * self.get_probility(N2_sample, np.array([0.0, 0.0]), np.array([1.0]))
+                * self.get_probility(
+                    N2_sample, np.array([0.0, 0.0]), np.array([1.0, 1.0])
+                )
                 / self.get_probility(N2_sample, mul_i, sigma_i)
             )
             / self.N_2
@@ -100,6 +104,7 @@ class FI_PINN(PINNSolver):
 
         for i in range(self.max_iter):
             Pf, D_adaptive = self.SAIS()
+            print(f"iter:{i}, Pf:{Pf}")
             if Pf < self.epsilon_p:
                 break
             if D_adaptive.shape[0] != 0:
