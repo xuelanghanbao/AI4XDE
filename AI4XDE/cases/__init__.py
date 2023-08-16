@@ -52,6 +52,7 @@ __all__ = [
     "Diffusion_Reaction_Inverse",
     "Navier_Stokes_Incompressible_Flow_Around_Cylinder_Inverse",
     "Bimodal_2D",
+    "NS_Flow_in_LidDriven_Cavity",
 ]
 
 from .PDECases import (
@@ -79,6 +80,7 @@ from .PDECases import (
     Fractional_Diffusion_1D,
     Schrodinger,
     Bimodal_2D,
+    NS_Flow_in_LidDriven_Cavity,
 )
 from .FuncCases import FuncCases, FuncFromFormula, FuncFromData
 from .PoissonCases import (

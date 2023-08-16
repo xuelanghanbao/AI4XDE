@@ -14,6 +14,7 @@ AI4XDE是一个用于科学机器学习和物理信息网络的综合库。AI4XD
 7. R3Sampling
 8. HPO
 9. gPINN
+10. FI-PINN
 
 目前AI4XDE支持算例如下：
 
@@ -63,6 +64,7 @@ AI4XDE是一个用于科学机器学习和物理信息网络的综合库。AI4XD
 44. Diffusion-Reaction反问题
 45. 不可压缩流体Navier-Stokes方程（圆柱扰流）反问题
 46. 二维双峰分布问题
+47. 方腔流
 
 
 #### 安装教程

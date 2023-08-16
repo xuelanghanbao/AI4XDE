@@ -14,6 +14,7 @@ Currently, AI4XDE supports the following algorithms:
 7. R3Sampling
 8. HPO
 9. gPINN
+10. FI-PINN
 
 Currently,  AI4XDE supports the following examples:
 
@@ -63,6 +64,7 @@ Currently,  AI4XDE supports the following examples:
 44. Inverse problem for the Diffusion-reaction equation
 45. Inverse problem for the Navier-Stokes equation of incompressible flow around cylinder
 46. Bimodal in 2D
+47. Flow in a Lid-Driven Cavity
 
 #### Installation
 

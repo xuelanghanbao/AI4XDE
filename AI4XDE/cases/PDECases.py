@@ -2534,3 +2534,129 @@ class Bimodal_2D(PDECases):
             X, y, model_y, shape=[1000, 1000], title=solver.name, colorbar=colorbar
         )
         return fig, axes
+
+
+class NS_Flow_in_LidDriven_Cavity(PDECases):
+    def __init__(
+        self,
+        NumDomain=2000,
+        layer_size=[2] + [50] * 3 + [3],
+        activation="tanh",
+        initializer="Glorot normal",
+    ):
+        self.Re = 100
+        super().__init__(
+            name="Flow in a Lid-Driven Cavity",
+            NumDomain=NumDomain,
+            use_output_transform=False,
+            layer_size=layer_size,
+            activation=activation,
+            initializer=initializer,
+            metrics=None,
+            visualization=Visualization_2D(
+                x_limit=[0, 1],
+                y_limit=[0, 1],
+                x_label="x1",
+                y_label="x2",
+            ),
+        )
+
+    def gen_testdata(self):
+        X = np.array(
+            [[x1, x2] for x1 in np.linspace(0, 1, 100) for x2 in np.linspace(0, 1, 100)]
+        )
+        import os
+
+        basepath = os.path.abspath(__file__)
+        folder = os.path.dirname(os.path.dirname(basepath))
+        u_ref_path = os.path.join(folder, "data/Flow_in_LidDriven_Cavity_u.csv")
+        v_ref_path = os.path.join(folder, "data/Flow_in_LidDriven_Cavity_v.csv")
+
+        u_ref = np.genfromtxt(u_ref_path, delimiter=",")
+        v_ref = np.genfromtxt(v_ref_path, delimiter=",")
+        p_ref = np.zeros(v_ref.shape)
+
+        y = np.hstack(
+            (u_ref.reshape(-1, 1), v_ref.reshape(-1, 1), p_ref.reshape(-1, 1))
+        )
+        return X, y
+
+    def gen_pde(self):
+        def pde(x, y):
+            u = y[:, 0:1]
+            v = y[:, 1:2]
+            p = y[:, 2:3]
+
+            u_x = dde.grad.jacobian(y, x, i=0, j=0)
+            u_y = dde.grad.jacobian(y, x, i=0, j=1)
+
+            v_x = dde.grad.jacobian(y, x, i=1, j=0)
+            v_y = dde.grad.jacobian(y, x, i=1, j=1)
+
+            p_x = dde.grad.jacobian(y, x, i=2, j=0)
+            p_y = dde.grad.jacobian(y, x, i=2, j=1)
+
+            u_xx = dde.grad.hessian(y, x, component=0, i=0, j=0)
+            u_yy = dde.grad.hessian(y, x, component=0, i=1, j=1)
+
+            v_xx = dde.grad.hessian(y, x, component=1, i=0, j=0)
+            v_yy = dde.grad.hessian(y, x, component=1, i=1, j=1)
+
+            f_u = u * u_x + v * u_y + p_x - 1 / self.Re * (u_xx + u_yy)
+            f_v = u * v_x + v * v_y + p_y - 1 / self.Re * (v_xx + v_yy)
+            f_p = u_x + v_y
+
+            return f_u, f_v, f_p
+
+        return pde
+
+    def gen_geomtime(self):
+        return dde.geometry.Rectangle(xmin=[0, 0], xmax=[1, 1])
+
+    def gen_data(self):
+        def boundary_l(x, on_boundary):
+            return on_boundary and np.isclose(x[0], 0)
+
+        def boundary_r(x, on_boundary):
+            return on_boundary and np.isclose(x[0], 1)
+
+        def boundary_b(x, on_boundary):
+            return on_boundary and np.isclose(x[1], 0)
+
+        def boundary_t(x, on_boundary):
+            return on_boundary and np.isclose(x[1], 1)
+
+        def U_gamma_1(x):
+            return 0
+
+        def U_gamma_2(x):
+            return 1
+
+        bc_l_0 = dde.icbc.DirichletBC(self.geomtime, U_gamma_1, boundary_l, component=0)
+        bc_r_0 = dde.icbc.DirichletBC(self.geomtime, U_gamma_1, boundary_r, component=0)
+        bc_b_0 = dde.icbc.DirichletBC(self.geomtime, U_gamma_1, boundary_b, component=0)
+        bc_t_0 = dde.icbc.DirichletBC(self.geomtime, U_gamma_2, boundary_t, component=0)
+
+        bc_l_1 = dde.icbc.DirichletBC(self.geomtime, U_gamma_1, boundary_l, component=1)
+        bc_r_1 = dde.icbc.DirichletBC(self.geomtime, U_gamma_1, boundary_r, component=1)
+        bc_b_1 = dde.icbc.DirichletBC(self.geomtime, U_gamma_1, boundary_b, component=1)
+        bc_t_1 = dde.icbc.DirichletBC(self.geomtime, U_gamma_1, boundary_t, component=1)
+        return dde.data.PDE(
+            self.geomtime,
+            self.pde,
+            [bc_l_0, bc_r_0, bc_b_0, bc_t_0, bc_l_1, bc_r_1, bc_b_1, bc_t_1],
+            self.NumDomain,
+            200,
+            num_test=2000,
+        )
+
+    def plot_result(self, solver, colorbar=[0, 0, 0]):
+        X, y = self.gen_testdata()
+        model_y = solver.model.predict(X)
+        y = np.linalg.norm(y[:, :2], axis=1)
+        model_y = np.linalg.norm(model_y[:, :2], axis=1)
+
+        fig, axes = self.Visualization.plot_exact_predict_error_2D(
+            X, y, model_y, shape=[100, 100], title=solver.name, colorbar=colorbar
+        )
+        return fig, axes
