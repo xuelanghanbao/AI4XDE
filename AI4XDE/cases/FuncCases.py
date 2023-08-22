@@ -73,6 +73,10 @@ class FuncCases(ABC):
 
 
 class FuncFromFormula(FuncCases):
+    """Case of function from formula
+    Implementation of this case in deepxde https://deepxde.readthedocs.io/en/latest/demos/function/func.html.
+    """
+
     def __init__(
         self,
         NumTrain=16,
@@ -86,7 +90,7 @@ class FuncFromFormula(FuncCases):
         self.NumTest = NumTest
         self.geomtime = self.gen_geomtime()
         super().__init__(
-            name="FuncFromFormula",
+            name="Function from formula",
             layer_size=layer_size,
             activation=activation,
             initializer=initializer,
@@ -114,6 +118,10 @@ class FuncFromFormula(FuncCases):
 
 
 class FuncFromData(FuncCases):
+    """Case of function from data
+    Implementation of this case in deepxde https://deepxde.readthedocs.io/en/latest/demos/function/dataset.html.
+    """
+
     def __init__(
         self,
         TrainData="./data/dataset.train",

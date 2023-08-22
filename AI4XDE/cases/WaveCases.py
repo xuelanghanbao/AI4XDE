@@ -75,6 +75,10 @@ class WaveCase1D(PDECases):
 
 
 class Wave_1D_STMsFFN(WaveCase1D):
+    """Case of Wave equation.
+    Implementation of Wave equation example in deepxde https://github.com/lululxvi/deepxde/blob/master/examples/pinn_forward/wave_1d.py.
+    """
+
     def __init__(
         self,
         NumDomain=360,

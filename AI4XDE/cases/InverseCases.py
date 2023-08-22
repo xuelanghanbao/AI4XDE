@@ -47,6 +47,10 @@ class InverseCase(PDECases):
 
 
 class Lorenz_Inverse(InverseCase):
+    """Case of inverse problem for the Lorenz system
+    Implementation of this case in deepxde https://deepxde.readthedocs.io/en/latest/demos/pinn_inverse/lorenz.inverse.html.
+    """
+
     def __init__(
         self,
         NumDomain=400,
@@ -139,6 +143,10 @@ class Lorenz_Inverse(InverseCase):
 
 
 class Lorenz_Exogenous_Input_Inverse(InverseCase):
+    """Case of inverse problem for the Lorenz system with exogenous input
+    Implementation of this case in deepxde https://deepxde.readthedocs.io/en/latest/demos/pinn_inverse/lorenz.inverse.forced.html.
+    """
+
     def __init__(
         self,
         NumDomain=400,
@@ -263,6 +271,10 @@ class Lorenz_Exogenous_Input_Inverse(InverseCase):
 
 
 class Brinkman_Forchheimer_Inverse(InverseCase):
+    """Case of inverse problem for Brinkman-Forchheimer model
+    Implementation of this case in deepxde https://github.com/lululxvi/deepxde/blob/master/examples/pinn_inverse/brinkman_forchheimer.py
+    """
+
     def __init__(
         self,
         NumDomain=100,
@@ -342,6 +354,10 @@ class Brinkman_Forchheimer_Inverse(InverseCase):
 
 
 class Diffusion_Inverse(InverseCase):
+    """Case of inverse problem for the diffusion equation
+    Implementation of this case in deepxde https://deepxde.readthedocs.io/en/latest/demos/pinn_inverse/diffusion.1d.inverse.html.
+    """
+
     def __init__(
         self,
         NumDomain=40,
@@ -432,6 +448,10 @@ class Diffusion_Inverse(InverseCase):
 
 
 class Diffusion_Reaction_Inverse(InverseCase):
+    """Case of inverse problem for the diffusion-reaction system
+    Implementation of this case in deepxde https://deepxde.readthedocs.io/en/latest/demos/pinn_inverse/reaction.inverse.html.
+    """
+
     def __init__(
         self,
         NumDomain=2000,
@@ -563,6 +583,10 @@ class Diffusion_Reaction_Inverse(InverseCase):
 
 
 class Navier_Stokes_Incompressible_Flow_Around_Cylinder_Inverse(InverseCase):
+    """Case of inverse problem for the Navier-Stokes equation of incompressible flow around cylinder
+    Implementation of this case in deepxde https://github.com/lululxvi/deepxde/blob/master/examples/pinn_inverse/Navier_Stokes_inverse.py.
+    """
+
     def __init__(
         self,
         NumDomain=700,

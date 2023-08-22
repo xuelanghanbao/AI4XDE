@@ -131,6 +131,10 @@ class PoissonCase2D(PDECases):
 
 
 class Poisson_1D_Dirichlet(PoissonCase1D):
+    """Case of Poisson equation in 1D with Dirichlet boundary conditions.
+    Implementation of this example in deepxde https://deepxde.readthedocs.io/en/latest/demos/pinn_forward/poisson.1d.dirichlet.html.
+    """
+
     def __init__(
         self,
         NumDomain=16,
@@ -171,6 +175,10 @@ class Poisson_1D_Dirichlet(PoissonCase1D):
 
 
 class Poisson_1D_Dirichlet_Neumann(PoissonCase1D):
+    """Case of Poisson equation in 1D with Dirichlet/Neumann boundary conditions.
+    Implementation of this example in deepxde https://deepxde.readthedocs.io/en/latest/demos/pinn_forward/poisson.1d.neumanndirichlet.html.
+    """
+
     def __init__(
         self,
         NumDomain=16,
@@ -216,6 +224,10 @@ class Poisson_1D_Dirichlet_Neumann(PoissonCase1D):
 
 
 class Poisson_1D_Dirichlet_Robin(PoissonCase1D):
+    """Case of Poisson equation in 1D with Dirichlet/Robin boundary conditions.
+    Implementation of this example in deepxde https://deepxde.readthedocs.io/en/latest/demos/pinn_forward/poisson.1d.dirichletrobin.html.
+    """
+
     def __init__(
         self,
         NumDomain=16,
@@ -261,6 +273,10 @@ class Poisson_1D_Dirichlet_Robin(PoissonCase1D):
 
 
 class Poisson_1D_Dirichlet_Periodic(PoissonCase1D):
+    """Case of Poisson equation in 1D with Dirichlet/Periodic boundary conditions.
+    Implementation of this example in deepxde https://deepxde.readthedocs.io/en/latest/demos/pinn_forward/poisson.1d.dirichletperiodic.html.
+    """
+
     def __init__(
         self,
         NumDomain=16,
@@ -306,6 +322,10 @@ class Poisson_1D_Dirichlet_Periodic(PoissonCase1D):
 
 
 class Poisson_1D_Dirichlet_PointSetOperator(PoissonCase1D):
+    """Case of Poisson equation in 1D with Dirichlet/PointSetOperator boundary conditions.
+    Implementation of this example in deepxde https://deepxde.readthedocs.io/en/latest/demos/pinn_forward/poisson.1d.pointsetoperator.html.
+    """
+
     def __init__(
         self,
         NumDomain=16,
@@ -357,6 +377,10 @@ class Poisson_1D_Dirichlet_PointSetOperator(PoissonCase1D):
 
 
 class Poisson_1D_Hard_Boundary(PoissonCase1D):
+    """Case of Poisson equation in 1D with hard boundary conditions.
+    Implementation of this example in deepxde https://deepxde.readthedocs.io/en/latest/demos/pinn_forward/poisson.dirichlet.1d.exactbc.html.
+    """
+
     def __init__(
         self,
         NumDomain=64,
@@ -393,6 +417,10 @@ class Poisson_1D_Hard_Boundary(PoissonCase1D):
 
 
 class Poisson_1D_Fourier_Net(PoissonCase1D):
+    """Case of Poisson equation in 1D with Fourier neural networks.
+    Implementation of this example in deepxde https://deepxde.readthedocs.io/en/latest/demos/pinn_forward/poisson.1d.multiscaleFourier.html.
+    """
+
     def __init__(
         self,
         NumDomain=1280,
@@ -466,6 +494,10 @@ class Poisson_1D_Fourier_Net(PoissonCase1D):
 
 
 class Poisson_2D_L_Shaped(PoissonCase2D):
+    """Case of Poisson equation over L-shaped domain.
+    Implementation of this example in deepxde https://deepxde.readthedocs.io/en/latest/demos/pinn_forward/poisson.Lshape.html.
+    """
+
     def __init__(
         self,
         NumDomain=1200,
@@ -534,6 +566,10 @@ class Poisson_2D_L_Shaped(PoissonCase2D):
 
 
 class Poisson_1D_Unknown_Forcing_Field_Inverse(PoissonCase1D):
+    """Case of Inverse problem for the Poisson equation with unknown forcing field.
+    Implementation of this example in deepxde https://deepxde.readthedocs.io/en/latest/demos/pinn_inverse/elliptic.inverse.field.html.
+    """
+
     def __init__(
         self,
         NumDomain=16,
@@ -591,6 +627,10 @@ class Poisson_1D_Unknown_Forcing_Field_Inverse(PoissonCase1D):
 
 
 class Poisson_1D_Fractional_Inverse(PoissonCase1D):
+    """Case of Inverse problem for the fractional Poisson equation in 1D.
+    Implementation of this example in deepxde https://github.com/lululxvi/deepxde/blob/master/examples/pinn_inverse/fractional_Poisson_1d_inverse.py.
+    """
+
     def __init__(
         self,
         NumDomain=20,
@@ -679,6 +719,10 @@ class Poisson_1D_Fractional_Inverse(PoissonCase1D):
 
 
 class Poisson_2D_Fractional_Inverse(PDECases):
+    """Case of Inverse problem for the fractional Poisson equation in 2D.
+    Implementation of this example in deepxde https://github.com/lululxvi/deepxde/blob/master/examples/pinn_inverse/fractional_Poisson_2d_inverse.py.
+    """
+
     def __init__(
         self,
         NumDomain=64,
@@ -786,6 +830,10 @@ class Poisson_2D_Fractional_Inverse(PDECases):
 
 
 class Poisson_2D_Peak(PoissonCase2D):
+    """Case of Two-dimensional peak problem.
+    Implementation of this example in paper http://arxiv.org/abs/2112.14038.
+    """
+
     def __init__(
         self,
         NumDomain=2000,
