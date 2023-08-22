@@ -102,6 +102,10 @@ class PDECases(ABC):
 
 
 class A_Simple_ODE(PDECases):
+    """Case of A Simple ODE
+    Implementation of this example in deepxde https://deepxde.readthedocs.io/en/latest/demos/pinn_forward/ode.system.html.
+    """
+
     def __init__(
         self,
         NumDomain=2000,
@@ -159,6 +163,10 @@ class A_Simple_ODE(PDECases):
 
 
 class LotkaVolterra(PDECases):
+    """Case of Lotka-Volterra equation
+    Implementation of this example in deepxde https://deepxde.readthedocs.io/en/latest/demos/pinn_forward/lotka.volterra.html.
+    """
+
     def __init__(
         self,
         NumDomain=3000,
@@ -266,6 +274,10 @@ class LotkaVolterra(PDECases):
 
 
 class SecondOrderODE(PDECases):
+    """Case of Second Order ODE
+    Implementation of this example in deepxde https://deepxde.readthedocs.io/en/latest/demos/pinn_forward/ode.2nd.html.
+    """
+
     def __init__(
         self,
         NumDomain=16,
@@ -327,6 +339,10 @@ class SecondOrderODE(PDECases):
 
 
 class Laplace_disk(PDECases):
+    """Case of Laplace equation over a disk domain
+    Implementation of this example in deepxde https://deepxde.readthedocs.io/en/latest/demos/pinn_forward/laplace.disk.html.
+    """
+
     def __init__(
         self,
         NumDomain=2540,
@@ -410,6 +426,10 @@ class Laplace_disk(PDECases):
 
 
 class Euler_Beam(PDECases):
+    """Case of Euler beam equation over a 1D domain
+    Implementation of this example in deepxde https://deepxde.readthedocs.io/en/latest/demos/pinn_forward/eulerbeam.html.
+    """
+
     def __init__(
         self,
         NumDomain=10,
@@ -482,6 +502,10 @@ class Euler_Beam(PDECases):
 
 
 class Helmholtz(PDECases):
+    """Case of Helmholtz equation over a 2D square domain
+    Implementation of this example in deepxde https://deepxde.readthedocs.io/en/latest/demos/pinn_forward/helmholtz.2d.dirichlet.html.
+    """
+
     def __init__(
         self,
         NumDomain=2540,
@@ -576,6 +600,10 @@ class Helmholtz(PDECases):
 
 
 class Helmholtz_Hole(PDECases):
+    """Case of Helmholtz equation over a 2D square domain with a hole
+    Implementation of this example in deepxde https://deepxde.readthedocs.io/en/latest/demos/pinn_forward/helmholtz.2d.neumann.hole.html.
+    """
+
     def __init__(
         self,
         precision_train=15,
@@ -703,6 +731,10 @@ class Helmholtz_Hole(PDECases):
 
 
 class Helmholtz_Sound_hard_Absorbing(PDECases):
+    """Case of Helmholtz sound-hard scattering problem with absorbing boundary conditions
+    Implementation of this example in deepxde https://deepxde.readthedocs.io/en/latest/demos/pinn_forward/helmholtz.2d.sound.hard.abc.html.
+    """
+
     def __init__(
         self,
         hard_constraint=False,
@@ -878,6 +910,10 @@ class Helmholtz_Sound_hard_Absorbing(PDECases):
 
 
 class Kovasznay_Flow(PDECases):
+    """Case of Kovasznay flow
+    Implementation of Kovasznay flow example in deepxde https://deepxde.readthedocs.io/en/latest/demos/pinn_forward/Kovasznay.flow.html
+    """
+
     def __init__(
         self,
         NumDomain=2601,
@@ -1021,6 +1057,10 @@ class Kovasznay_Flow(PDECases):
 
 
 class Burgers(PDECases):
+    """Case of Burgers equation.
+    Implementation of Burgers equation example in deepxde https://deepxde.readthedocs.io/en/latest/demos/pinn_forward/burgers.html
+    """
+
     def __init__(
         self,
         NumDomain=2000,
@@ -1095,6 +1135,10 @@ class Burgers(PDECases):
 
 
 class Heat(PDECases):
+    """Case of Heat equation.
+    Implementation of Heat equation example in deepxde https://deepxde.readthedocs.io/en/latest/demos/pinn_forward/heat.html
+    """
+
     def __init__(
         self,
         NumDomain=2540,
@@ -1179,6 +1223,10 @@ class Heat(PDECases):
 
 
 class Diffusion(PDECases):
+    """Case of Diffusion equation.
+    Implementation of Diffusion equation example in deepxde https://deepxde.readthedocs.io/en/latest/demos/pinn_forward/diffusion.1d.html.
+    """
+
     def __init__(
         self,
         NumDomain=40,
@@ -1270,6 +1318,10 @@ class Diffusion(PDECases):
 
 
 class Diffusion_reaction(PDECases):
+    """Case of Diffusion-reaction equation.
+    Implementation of Diffusion-reaction equation example in deepxde https://deepxde.readthedocs.io/en/latest/demos/pinn_forward/diffusion.reaction.html.
+    """
+
     def __init__(
         self,
         NumDomain=320,
@@ -1451,6 +1503,10 @@ class AllenCahn(PDECases):
 
 
 class Klein_Gordon(PDECases):
+    """Case of Klein-Gordon equation.
+    Implementation of Klein-Gordon equation example in deepxde https://deepxde.readthedocs.io/en/latest/demos/pinn_forward/klein.gordon.html.
+    """
+
     def __init__(
         self,
         NumDomain=30000,
@@ -1538,6 +1594,10 @@ class Klein_Gordon(PDECases):
 
 
 class Beltrami_flow(PDECases):
+    """Case of Beltrami flow.
+    Implementation of Beltrami flow example in deepxde https://github.com/lululxvi/deepxde/blob/master/examples/pinn_forward/Beltrami_flow.py.
+    """
+
     def __init__(
         self,
         NumDomain=50000,
@@ -1771,6 +1831,10 @@ class Beltrami_flow(PDECases):
 
 
 class Schrodinger(PDECases):
+    """Case of Schrodinger equation.
+    Implementation of Schrodinger equation example in deepxde https://github.com/lululxvi/deepxde/blob/master/examples/pinn_forward/Schrodinger.ipynb.
+    """
+
     def __init__(
         self,
         NumDomain=10000,
@@ -1911,6 +1975,10 @@ class Schrodinger(PDECases):
 
 
 class IDE(PDECases):
+    """Case of IDE.
+    Implementation of IDE example in deepxde https://github.com/lululxvi/deepxde/blob/master/examples/pinn_forward/ide.py.
+    """
+
     def __init__(
         self,
         NumDomain=16,
@@ -1962,6 +2030,10 @@ class IDE(PDECases):
 
 
 class Volterra_IDE(PDECases):
+    """Case of Volterra IDE.
+    Implementation of Volterra IDE example in deepxde https://github.com/lululxvi/deepxde/blob/master/examples/pinn_forward/Volterra_IDE.py.
+    """
+
     def __init__(
         self,
         NumDomain=10,
@@ -2019,6 +2091,10 @@ class Volterra_IDE(PDECases):
 
 
 class Fractional_Poisson_1D(PDECases):
+    """Case of Fractional Poisson 1D.
+    Implementation of Fractional Poisson 1D example in deepxde https://github.com/lululxvi/deepxde/blob/master/examples/pinn_forward/fractional_Poisson_1d.py.
+    """
+
     def __init__(
         self,
         NumDomain=101,
@@ -2098,6 +2174,10 @@ class Fractional_Poisson_1D(PDECases):
 
 
 class Fractional_Poisson_2D(PDECases):
+    """Case of Fractional Poisson 2D.
+    Implementation of Fractional Poisson 2D example in deepxde https://github.com/lululxvi/deepxde/blob/master/examples/pinn_forward/fractional_Poisson_2d.py.
+    """
+
     def __init__(
         self,
         NumDomain=100,
@@ -2197,6 +2277,10 @@ class Fractional_Poisson_2D(PDECases):
 
 
 class Fractional_Poisson_3D(PDECases):
+    """Case of Fractional Poisson 3D.
+    Implementation of Fractional Poisson 3D example in deepxde https://github.com/lululxvi/deepxde/blob/master/examples/pinn_forward/fractional_Poisson_3d.py.
+    """
+
     def __init__(
         self,
         NumDomain=256,
@@ -2303,6 +2387,10 @@ class Fractional_Poisson_3D(PDECases):
 
 
 class Fractional_Diffusion_1D(PDECases):
+    """Case of Fractional Diffusion 1D.
+    Implementation of Fractional Diffusion 1D example in deepxde https://github.com/lululxvi/deepxde/blob/master/examples/pinn_forward/fractional_diffusion_1d.py.
+    """
+
     def __init__(
         self,
         NumDomain=400,
@@ -2429,6 +2517,10 @@ class Fractional_Diffusion_1D(PDECases):
 
 
 class Bimodal_2D(PDECases):
+    """Case of Bimodal 2D.
+    Implementation of Bimodal 2D example in paper http://arxiv.org/abs/2112.14038.
+    """
+
     def __init__(
         self,
         NumDomain=2000,
@@ -2537,6 +2629,10 @@ class Bimodal_2D(PDECases):
 
 
 class NS_Flow_in_LidDriven_Cavity(PDECases):
+    """Case of Flow in a Lid-Driven Cavity.
+    Implementation of Flow in a Lid-Driven Cavity example in paper https://www.mdpi.com/2227-7390/10/12/1976.
+    """
+
     def __init__(
         self,
         NumDomain=2000,
@@ -2575,6 +2671,9 @@ class NS_Flow_in_LidDriven_Cavity(PDECases):
         u_ref = np.genfromtxt(u_ref_path, delimiter=",")
         v_ref = np.genfromtxt(v_ref_path, delimiter=",")
         p_ref = np.zeros(v_ref.shape)
+        print(
+            "In this case, the reference solution of pressure is unknow and set to zero."
+        )
 
         y = np.hstack(
             (u_ref.reshape(-1, 1), v_ref.reshape(-1, 1), p_ref.reshape(-1, 1))
