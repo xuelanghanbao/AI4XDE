@@ -53,6 +53,8 @@ __all__ = [
     "Navier_Stokes_Incompressible_Flow_Around_Cylinder_Inverse",
     "Bimodal_2D",
     "NS_Flow_in_LidDriven_Cavity",
+    "ConvectionCase1D",
+    "Convection_1D_Periodic",
 ]
 
 from .PDECases import (
@@ -100,6 +102,7 @@ from .PoissonCases import (
     Poisson_2D_Peak,
 )
 from .WaveCases import WaveCase1D, Wave_1D_STMsFFN, Wave_1D_Hard_Boundary
+from .ConvectionCases import ConvectionCase1D, Convection_1D_Periodic
 from .InverseCases import (
     InverseCase,
     Lorenz_Inverse,

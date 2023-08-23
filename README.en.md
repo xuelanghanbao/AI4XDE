@@ -65,6 +65,7 @@ Currently,  AI4XDE supports the following examples:
 45. Inverse problem for the Navier-Stokes equation of incompressible flow around cylinder
 46. Bimodal in 2D
 47. Flow in a Lid-Driven Cavity
+48. Convection equation in 1D with Periodic boundary conditions
 
 #### Installation
 
