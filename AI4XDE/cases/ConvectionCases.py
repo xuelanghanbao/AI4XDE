@@ -80,6 +80,11 @@ class ConvectionCase1D(PDECases):
 
 
 class Convection_1D_Periodic(ConvectionCase1D):
+    """Case of 1D Convection with Periodic
+    Implementation of this case in paper http://arxiv.org/abs/2109.01050.
+    The code of this paper is available at https://github.com/a1k12/characterizing-pinns-failure-modes.
+    """
+
     def __init__(
         self,
         beta=30,
@@ -96,7 +101,7 @@ class Convection_1D_Periodic(ConvectionCase1D):
         self.N = N
         self.nt = nt
         super().__init__(
-            name="Convection with ic sinx",
+            name="1D Convection with Periodic",
             beta=beta,
             interval=interval,
             time_interval=[0, time_end],
