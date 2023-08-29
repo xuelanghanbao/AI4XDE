@@ -85,6 +85,7 @@ def eig_of_ntk(PDECase, solver, sort=True, **kwargs):
     lambda_K, eigvec_K = np.linalg.eig(bkd.to_numpy(ntk_result))
     if sort:
         lambda_K = np.sort(np.real(lambda_K))[::-1]
+        eigvec_K = eigvec_K[:, np.argsort(np.real(lambda_K))[::-1]]
     return lambda_K, eigvec_K
 
 
