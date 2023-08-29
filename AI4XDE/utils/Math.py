@@ -24,23 +24,42 @@ def ntk(PDECase, solver, compute="full"):
     # TODO: support other backends
     if bkd.backend_name != "pytorch":
         raise RuntimeError("NTK is only supported for PyTorch >= 2.0")
-    from functorch import make_functional, vmap, jacrev
-
-    def fnet_single(params, x):
-        return fnet(params, x.unsqueeze(0)).squeeze(0)
 
     x = PDECase.geomtime.random_points(PDECase.NumDomain)
     x = bkd.from_numpy(x)
 
-    # pytorch>=2.0
-
     # functorch
-    fnet, params = make_functional(solver.model.net)
-    jac1 = vmap(jacrev(fnet_single), (None, 0))(params, x)
+    # from functorch import make_functional, vmap, jacrev
+
+    # fnet, params = make_functional(solver.model.net)
+
+    # def fnet_single(params, x):
+    #     y = fnet(params, x.unsqueeze(0)).squeeze(0)
+    #     print(y.shape)
+    #     print(y)
+    #     return y
+
+    # jac1 = vmap(jacrev(fnet_single), (None, 0))(params, x)
+    # jac1 = [j.flatten(2) for j in jac1]
+
+    # jac2 = vmap(jacrev(fnet_single), (None, 0))(params, x)
+    # jac2 = [j.flatten(2) for j in jac2]
+
+    # pytorch>=2.0
+    from torch.func import functional_call, vmap, jacrev
+
+    params = dict(solver.model.net.named_parameters())
+
+    def fnet_single_torch(params, x):
+        y = functional_call(solver.model.net, params, x.unsqueeze(0)).squeeze(0)
+        return y
+
+    jac1 = vmap(jacrev(fnet_single_torch), (None, 0))(params, x)
+    jac1 = jac1.values()
     jac1 = [j.flatten(2) for j in jac1]
 
-    # Compute J(x2)
-    jac2 = vmap(jacrev(fnet_single), (None, 0))(params, x)
+    jac2 = vmap(jacrev(fnet_single_torch), (None, 0))(params, x)
+    jac2 = jac2.values()
     jac2 = [j.flatten(2) for j in jac2]
 
     # Compute J(x1) @ J(x2).T
