@@ -20,13 +20,20 @@ def transform_normal_to_truncated_normal_on_geomtime(X, geomtime, mul=0, sigma=1
     return X
 
 
-def ntk(PDECase, solver, compute="full"):
+def ntk(PDECase, solver, x=None, bc_point=False, compute="full"):
     # TODO: support other backends
     if bkd.backend_name != "pytorch":
         raise RuntimeError("NTK is only supported for PyTorch >= 2.0")
 
-    x = PDECase.geomtime.random_points(PDECase.NumDomain)
-    x = bkd.from_numpy(x)
+    if x is None:
+        if bc_point:
+            x = PDECase.geomtime.random_boundary_points(PDECase.NumDomain)
+        else:
+            x = PDECase.geomtime.random_points(PDECase.NumDomain)
+        x = bkd.from_numpy(x)
+
+    if type(x) is np.ndarray:
+        x = bkd.from_numpy(x)
 
     # functorch
     # from functorch import make_functional, vmap, jacrev
@@ -95,7 +102,7 @@ def visualize_ntk(PDECase, solver, **kwargs):
     lambda_K, eigvec_K = eig_of_ntk(PDECase, solver, **kwargs)
     # Visualize the eigenvectors of the NTK
     fig, axs = plt.subplots(2, 3, figsize=(12, 6))
-    X = np.linspace(0, 1, PDECase.NumDomain)
+    X = np.linspace(0, 1, lambda_K.shape[0])
     axs[0, 0].plot(X, np.real(eigvec_K[:, 0]))
     axs[0, 1].plot(X, np.real(eigvec_K[:, 1]))
     axs[0, 2].plot(X, np.real(eigvec_K[:, 2]))
