@@ -87,11 +87,11 @@ class PINNSolver:
     def closure(self):
         self.train_step()
 
-    def train(self):
+    def train(self, **kwargs):
         t_start = time.time()
         print(f"Model {self.name} is training...")
 
-        self.closure()
+        self.closure(**kwargs)
 
         t_end = time.time()
         self.train_cost = t_end - t_start
