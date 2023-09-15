@@ -5,7 +5,7 @@ from ..solver.PDESolver import PINNSolver
 
 
 class Domain_decomposition:
-    def __init__(self, PDECase, segment):
+    def __init__(self, PDECase, segment, overlap=0.1):
         self.PDECase = PDECase
         self.segment = segment
         self.window_func_list = []
@@ -54,7 +54,9 @@ class Domain_decomposition:
             x_list = np.linspace(x_limit[0], x_limit[1], self.segment + 1)
             domain_list = []
             for i in range(self.segment):
-                domain_list.append(dde.geometry.Interval(x_list[i], x_list[i + 1]))
+                l = x_list[i] - (x_list[i + 1] - x_list[i]) * self.overlap
+                r = x_list[i + 1] + (x_list[i + 1] - x_list[i]) * self.overlap
+                domain_list.append(dde.geometry.Interval(l, r))
         else:
             # TODO: support other geomtime
             raise ValueError("Only support geomtime Interval")
