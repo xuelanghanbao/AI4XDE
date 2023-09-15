@@ -27,7 +27,7 @@ class Domain_decomposition:
             def __init__(self, **kwargs):
                 super().__init__(**kwargs)
 
-            def gen_geometry(self):
+            def gen_geomtime(self):
                 return domain
 
             def output_transform(self, x, y):
