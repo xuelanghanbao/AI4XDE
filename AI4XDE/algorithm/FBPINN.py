@@ -79,7 +79,8 @@ class Domain_decomposition:
 
 
 class FBPINN(PINNSolver):
-    def __init__(self, PDECase, segment):
+    def __init__(self, PDECase, segment, iter=10):
+        self.iter = iter
         self.domains = Domain_decomposition(PDECase, segment)
         super().__init__(name="FBPINN", PDECase=PDECase)
         self.model_list = [
@@ -96,7 +97,8 @@ class FBPINN(PINNSolver):
                 self.eval()
 
     def closure(self):
-        self.train_step()
+        for iter in range(self.iter):
+            self.train_step()
 
     def compile(
         self,
