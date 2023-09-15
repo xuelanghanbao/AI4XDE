@@ -70,6 +70,13 @@ class Domain_decomposition:
             axes.plot(X, window_fun, "--", label=f"Prediction{i}")
         axes.legend()
 
+    def plot_subdomains(self):
+        axes = self.PDECase.Visualization.set_axes_1D(title=self.PDECase.name)
+        for i, pde in enumerate(self.pdeCase_list):
+            x = np.linspace(pde.geomtime.l, pde.geomtime.r, 100)
+            axes.plot(x, np.zeros_like(x), label=f"subdomain {i}")
+        axes.legend()
+
 
 class FBPINN(PINNSolver):
     def __init__(self, PDECase, segment):
