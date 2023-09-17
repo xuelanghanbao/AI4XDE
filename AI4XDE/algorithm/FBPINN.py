@@ -8,6 +8,8 @@ class Domain_decomposition:
     def __init__(self, PDECase, segment, overlap=0.1):
         self.PDECase = PDECase
         self.segment = segment
+        self.overlap = overlap
+        self.dim = PDECase.geomtime.dim
         self.window_func_list = []
         self.pdeCase_list = self.gen_pdeCase_list()
 
@@ -49,13 +51,27 @@ class Domain_decomposition:
 
     def domain_decomposition(self):
         geomtime = self.PDECase.geomtime
-        if isinstance(geomtime, dde.geometry.Interval):
+        if isinstance(geomtime, dde.geometry.TimeDomain):
             x_limit = [geomtime.l, geomtime.r]
             x_list = np.linspace(x_limit[0], x_limit[1], self.segment + 1)
             domain_list = []
             for i in range(self.segment):
-                l = x_list[i] - (x_list[i + 1] - x_list[i]) * self.overlap
-                r = x_list[i + 1] + (x_list[i + 1] - x_list[i]) * self.overlap
+                width = x_list[i + 1] - x_list[i]
+                l = x_list[i] - self.overlap * width
+                r = x_list[i + 1] + self.overlap * width
+                l = max(l, x_limit[0])
+                r = min(r, x_limit[1])
+                domain_list.append(dde.geometry.TimeDomain(l, r))
+        elif isinstance(geomtime, dde.geometry.Interval):
+            x_limit = [geomtime.l, geomtime.r]
+            x_list = np.linspace(x_limit[0], x_limit[1], self.segment + 1)
+            domain_list = []
+            for i in range(self.segment):
+                width = x_list[i + 1] - x_list[i]
+                l = x_list[i] - self.overlap * width
+                r = x_list[i + 1] + self.overlap * width
+                l = max(l, x_limit[0])
+                r = min(r, x_limit[1])
                 domain_list.append(dde.geometry.Interval(l, r))
         else:
             # TODO: support other geomtime
