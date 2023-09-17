@@ -4,13 +4,12 @@ import deepxde.backend as bkd
 from ..cases.PDECases import Burgers
 from ..solver.PDESolver import PINNSolver
 
-dde.optimizers.config.set_LBFGS_options(maxiter=1000)
-
 
 class R3Sampling(PINNSolver):
     def __init__(
         self, PDECase, max_iter=100, causally_sampling=False, beta_lr=0.001, tol=20
     ):
+        dde.optimizers.config.set_LBFGS_options(maxiter=1000)
         name = "R3Sampling"
         if causally_sampling:
             name += "_causal"

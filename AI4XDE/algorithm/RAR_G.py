@@ -4,11 +4,10 @@ from ..cases.PDECases import AllenCahn
 from ..solver.PDESolver import PINNSolver
 import time
 
-dde.optimizers.config.set_LBFGS_options(maxiter=1000)
-
 
 class RAR_G(PINNSolver):
     def __init__(self, PDECase, iter=100):
+        dde.optimizers.config.set_LBFGS_options(maxiter=1000)
         self.iter = iter
         super().__init__(name="RAR_G", PDECase=PDECase)
 
