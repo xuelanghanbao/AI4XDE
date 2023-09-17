@@ -55,6 +55,7 @@ __all__ = [
     "NS_Flow_in_LidDriven_Cavity",
     "ConvectionCase1D",
     "Convection_1D_Periodic",
+    "Harmonic_Oscillator_1D",
 ]
 
 from .PDECases import (
@@ -83,6 +84,7 @@ from .PDECases import (
     Schrodinger,
     Bimodal_2D,
     NS_Flow_in_LidDriven_Cavity,
+    Harmonic_Oscillator_1D,
 )
 from .FuncCases import FuncCases, FuncFromFormula, FuncFromData
 from .PoissonCases import (

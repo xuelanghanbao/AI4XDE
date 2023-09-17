@@ -15,6 +15,7 @@ Currently, AI4XDE supports the following algorithms:
 8. HPO
 9. gPINN
 10. FI-PINN
+11. FBPINN
 
 Currently,  AI4XDE supports the following examples:
 
@@ -66,6 +67,7 @@ Currently,  AI4XDE supports the following examples:
 46. Bimodal in 2D
 47. Flow in a Lid-Driven Cavity
 48. Convection equation in 1D with Periodic boundary conditions
+49. Harmonic Oscillator 1D
 
 #### Installation
 

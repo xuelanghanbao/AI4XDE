@@ -2759,3 +2759,79 @@ class NS_Flow_in_LidDriven_Cavity(PDECases):
             X, y, model_y, shape=[100, 100], title=solver.name, colorbar=colorbar
         )
         return fig, axes
+
+
+class Harmonic_Oscillator_1D(PDECases):
+    """Case of Harmonic Oscillator 1D
+    Implementation of this example in paper: http://arxiv.org/abs/2107.07871.
+    """
+
+    def __init__(
+        self,
+        d=2,
+        w0=20,
+        NumDomain=100,
+        layer_size=[1] + [64] * 3 + [1],
+        activation="tanh",
+        initializer="Glorot normal",
+        loss_weights=[1, 1e6, 1e2],
+        **kwargs,
+    ):
+        self.d = d
+        self.w0 = w0
+        self.mu = 2 * self.d
+        self.k = self.w0**2
+        super().__init__(
+            name="Harmonic Oscillator 1D",
+            NumDomain=NumDomain,
+            use_output_transform=False,
+            layer_size=layer_size,
+            activation=activation,
+            initializer=initializer,
+            loss_weights=loss_weights,
+            metrics=["l2 relative error"],
+            visualization=Visualization_1D(x_label="t", y_label="u"),
+            **kwargs,
+        )
+
+    def gen_pde(self):
+        def ode(t, u):
+            du_t = dde.grad.jacobian(u, t)
+            du_tt = dde.grad.hessian(u, t)
+            return du_tt + self.mu * du_t + self.k * u
+
+        return ode
+
+    def gen_geomtime(self):
+        geom = dde.geometry.TimeDomain(0, 1)
+        return geom
+
+    def gen_data(self):
+        def boundary(x, on_initial):
+            return np.isclose(x[0], 0)
+
+        ic1 = dde.icbc.DirichletBC(self.geomtime, lambda x: 1, boundary)
+        ic2 = dde.icbc.NeumannBC(self.geomtime, lambda x: 0, boundary)
+        return dde.data.PDE(
+            self.geomtime,
+            self.pde,
+            [ic1, ic2],
+            num_domain=self.NumDomain,
+            num_boundary=2,
+            solution=self.sol,
+            num_test=1000,
+            train_distribution="pseudo",
+        )
+
+    def sol(self, x):
+        w = np.sqrt(self.w0**2 - self.d**2)
+        phi = np.arctan(-self.d / w)
+        A = 1 / (2 * np.cos(phi))
+        cos = np.cos(phi + w * x)
+        exp = np.exp(-self.d * x)
+        u = exp * 2 * A * cos
+        return u
+
+    def plot_result(self, solver, axes=None, exact=True):
+        axes = self.Visualization.plot_line_1D(self, solver, exact, axes=axes)
+        return axes
