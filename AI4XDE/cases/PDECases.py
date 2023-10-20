@@ -2770,6 +2770,7 @@ class Harmonic_Oscillator_1D(PDECases):
         self,
         d=2,
         w0=20,
+        hard_condition=False,
         NumDomain=100,
         layer_size=[1] + [64] * 3 + [1],
         activation="tanh",
@@ -2781,10 +2782,13 @@ class Harmonic_Oscillator_1D(PDECases):
         self.w0 = w0
         self.mu = 2 * self.d
         self.k = self.w0**2
+        self.hard_condition = hard_condition
+        if self.hard_condition:
+            loss_weights = [1]
         super().__init__(
             name="Harmonic Oscillator 1D",
             NumDomain=NumDomain,
-            use_output_transform=False,
+            use_output_transform=hard_condition,
             layer_size=layer_size,
             activation=activation,
             initializer=initializer,
@@ -2810,12 +2814,15 @@ class Harmonic_Oscillator_1D(PDECases):
         def boundary(x, on_initial):
             return np.isclose(x[0], 0)
 
-        ic1 = dde.icbc.DirichletBC(self.geomtime, lambda x: 1, boundary)
-        ic2 = dde.icbc.NeumannBC(self.geomtime, lambda x: 0, boundary)
+        ic = []
+        if not self.hard_condition:
+            ic1 = dde.icbc.DirichletBC(self.geomtime, lambda x: 1, boundary)
+            ic2 = dde.icbc.NeumannBC(self.geomtime, lambda x: 0, boundary)
+            ic = [ic1, ic2]
         return dde.data.PDE(
             self.geomtime,
             self.pde,
-            [ic1, ic2],
+            ic,
             num_domain=self.NumDomain,
             num_boundary=2,
             solution=self.sol,
@@ -2831,6 +2838,9 @@ class Harmonic_Oscillator_1D(PDECases):
         exp = np.exp(-self.d * x)
         u = exp * 2 * A * cos
         return u
+
+    def output_transform(self, x, y):
+        return 1 + bkd.tanh(x) ** 2 * y
 
     def plot_result(self, solver, axes=None, exact=True):
         axes = self.Visualization.plot_line_1D(self, solver, exact, axes=axes)
