@@ -97,6 +97,10 @@ class Domain_decomposition:
 
 
 class FBPINN(PINNSolver):
+    """Implementation of FBPINN algorithm.
+    Implementation of FBPINN algorithm in paper http://arxiv.org/abs/2107.07871.
+    """
+
     def __init__(self, PDECase, segment, iter=10):
         self.iter = iter
         self.domains = Domain_decomposition(PDECase, segment)

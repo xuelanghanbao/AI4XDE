@@ -6,6 +6,10 @@ import time
 
 
 class RAR_G(PINNSolver):
+    """Implementation of RAR_G algorithm.
+    Implementation of RAR_G algorithm in paper https://epubs.siam.org/doi/10.1137/19M1274067.
+    """
+
     def __init__(self, PDECase, iter=100):
         dde.optimizers.config.set_LBFGS_options(maxiter=1000)
         self.iter = iter

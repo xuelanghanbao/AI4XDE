@@ -6,6 +6,10 @@ from ..solver.PDESolver import PINNSolver
 
 
 class FI_PINN(PINNSolver):
+    """Implementation of FI_PINN algorithm.
+    Implementation of FI_PINN algorithm in paper http://arxiv.org/abs/2210.00279.
+    """
+
     def __init__(
         self,
         PDECase,

@@ -3,6 +3,10 @@ from ..solver.PDESolver import PINNSolver
 
 
 class PINN(PINNSolver):
+    """Implementation of PINN algorithm.
+    Implementation of PINN algorithm in paper https://linkinghub.elsevier.com/retrieve/pii/S0021999118307125.
+    """
+
     def __init__(self, PDECase):
         super().__init__(name="PINN", PDECase=PDECase)
 

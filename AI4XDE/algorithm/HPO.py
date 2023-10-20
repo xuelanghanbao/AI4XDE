@@ -10,6 +10,10 @@ from ..solver.PDESolver import PINNSolver
 
 
 class HPO(PINNSolver):
+    """Implementation of HPO algorithm.
+    Implementation of HPO algorithm in paper http://arxiv.org/abs/2205.06704.
+    """
+
     def __init__(
         self,
         PDECase,

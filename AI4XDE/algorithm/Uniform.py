@@ -7,6 +7,10 @@ from distutils.version import LooseVersion
 
 
 class Uniform(PINNSolver):
+    """Implementation of Uniform algorithm.
+    Implementation of Uniform algorithm in paper https://epubs.siam.org/doi/10.1137/19M1274067.
+    """
+
     def __init__(self, PDECase, method):
         self.method = method
         super().__init__(name=f"Uniform_{method}", PDECase=PDECase)

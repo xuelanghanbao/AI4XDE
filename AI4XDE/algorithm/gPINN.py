@@ -4,6 +4,10 @@ from ..solver.PDESolver import PINNSolver
 
 
 class gPINN(PINNSolver):
+    """Implementation of gPINN algorithm.
+    Implementation of gPINN algorithm in paper http://arxiv.org/abs/2111.02801.
+    """
+
     def __init__(self, PDECase):
         self.add_gradient_enhanced_res(PDECase)
         super().__init__(name="gPINN", PDECase=PDECase)

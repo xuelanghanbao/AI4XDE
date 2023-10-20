@@ -5,6 +5,10 @@ from ..solver.PDESolver import PINNSolver
 
 
 class RAR_D(PINNSolver):
+    """Implementation of RAR_D algorithm.
+    Implementation of RAR_D algorithm in paper https://epubs.siam.org/doi/10.1137/19M1274067.
+    """
+
     def __init__(self, PDECase, iter=100, k=2, c=0):
         dde.optimizers.config.set_LBFGS_options(maxiter=1000)
         super().__init__(name=f"RAR_D_k_{k}_c_{c}", PDECase=PDECase)

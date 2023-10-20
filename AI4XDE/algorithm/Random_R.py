@@ -4,6 +4,10 @@ from ..solver.PDESolver import PINNSolver
 
 
 class Random_R(PINNSolver):
+    """Implementation of Random_R algorithm.
+    Implementation of Random_R algorithm in paper https://epubs.siam.org/doi/10.1137/19M1274067.
+    """
+
     def __init__(self, PDECase, P):
         super().__init__(name=f"Random_R_P_{P}", PDECase=PDECase)
         self.P = P

@@ -5,6 +5,10 @@ from ..solver.PDESolver import PINNSolver
 
 
 class RAD(PINNSolver):
+    """Implementation of RAD algorithm.
+    Implementation of RAD algorithm in paper https://epubs.siam.org/doi/10.1137/19M1274067.
+    """
+
     def __init__(self, PDECase, iter=100, k=1, c=1):
         dde.optimizers.config.set_LBFGS_options(maxiter=1000)
         super().__init__(name=f"RAD_k_{k}_c_{c}", PDECase=PDECase)

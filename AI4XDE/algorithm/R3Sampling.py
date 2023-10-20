@@ -6,6 +6,10 @@ from ..solver.PDESolver import PINNSolver
 
 
 class R3Sampling(PINNSolver):
+    """Implementation of R3Sampling algorithm.
+    Implementation of R3Sampling algorithm in paper http://arxiv.org/abs/2207.02338.
+    """
+
     def __init__(
         self, PDECase, max_iter=100, causally_sampling=False, beta_lr=0.001, tol=20
     ):
