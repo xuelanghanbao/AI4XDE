@@ -16,6 +16,7 @@ AI4XDE是一个用于科学机器学习和物理信息网络的综合库。AI4XD
 9. gPINN
 10. FI-PINN
 11. FBPINN
+12. CausalPINN
 
 目前AI4XDE支持算例如下：
 

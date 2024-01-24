@@ -9,6 +9,7 @@ __all__ = [
     "Uniform",
     "gPINN",
     "FBPINN",
+    "CausalPINN",
 ]
 
 from .HPO import HPO
@@ -21,3 +22,4 @@ from .RAR_G import RAR_G
 from .Uniform import Uniform
 from .gPINN import gPINN
 from .FBPINN import FBPINN
+from .CausalPINN import CausalPINN

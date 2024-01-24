@@ -16,6 +16,7 @@ Currently, AI4XDE supports the following algorithms:
 9. gPINN
 10. FI-PINN
 11. FBPINN
+12. CausalPINN
 
 Currently,  AI4XDE supports the following examples:
 
