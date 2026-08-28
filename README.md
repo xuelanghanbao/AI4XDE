@@ -1,3 +1,5 @@
+
+
 # AI4XDE
 
 #### 介绍
@@ -73,7 +75,7 @@ AI4XDE是一个用于科学机器学习和物理信息网络的综合库。AI4XD
 
 #### 安装教程
 
-由于AI4XDE基于DeepXDE库，所以你需要首先安装DeepXDE库。
+由于AI4XDE基于DeepXDE库，所以你需要首先安装DeepXDE库。AI4XDE需要Python 3.7或更高版本。
 
 DeepXDE需要安装以下依赖项之一:
 
